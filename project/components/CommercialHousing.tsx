@@ -328,6 +328,9 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
   const [showAddSpace, setShowAddSpace] = useState(false);
   const [showRentPayment, setShowRentPayment] = useState(false);
   const [showContractDetail, setShowContractDetail] = useState(false);
+  const [showContractUpsert, setShowContractUpsert] = useState(false);
+  const [editingContract, setEditingContract] = useState<ContractItem | null>(null);
+  const [deletingContract, setDeletingContract] = useState<ContractItem | null>(null);
   const [showApprovalDetail, setShowApprovalDetail] = useState(false);
   const [showUtilityReading, setShowUtilityReading] = useState(false);
   const [showApartmentApply, setShowApartmentApply] = useState(false);
@@ -455,6 +458,139 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
   };
 
   // 租金缴纳
+  const genContractNo = () => {
+    const year = new Date().getFullYear();
+    let idx = 1;
+    while (idx < 9999) {
+      const no = `JYXF-${year}-${String(idx).padStart(3, '0')}`;
+      const exists = contracts.some(c => c.contractNo === no);
+      if (!exists) return no;
+      idx++;
+    }
+    return `JYXF-${year}-${Date.now()}`;
+  };
+
+  const handleUpsertContract = (data: {
+    contractNo: string;
+    spaceId: string;
+    tenant: string;
+    tenantContact: string;
+    tenantLicense?: string;
+    rentPerMonth: number;
+    startDate: string;
+    endDate: string;
+    status: ContractItem['status'];
+    performanceRating?: number;
+  }) => {
+    const space = spaces.find(s => s.id === data.spaceId);
+    if (!space) return;
+
+    // 合同编号唯一性校验（编辑时排除自身）
+    const conflict = contracts.find(c => c.contractNo === data.contractNo && c.id !== (editingContract?.id || ''));
+    if (conflict) {
+      alert('合同编号已存在，请更换合同编号');
+      return;
+    }
+
+    if (editingContract) {
+      setContracts(prev => prev.map(c => c.id === editingContract.id ? {
+        ...c,
+        contractNo: data.contractNo,
+        spaceId: data.spaceId,
+        spaceName: space.name,
+        area: space.area,
+        tenant: data.tenant,
+        tenantContact: data.tenantContact,
+        tenantLicense: data.tenantLicense,
+        rentPerMonth: data.rentPerMonth,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        status: data.status,
+        performanceRating: data.performanceRating,
+      } : c));
+
+      // 联动当期未缴账单（仅示例：更新空间名/承租方/租金）
+      setRentBills(prev => prev.map(b => b.contractId === editingContract.id && b.status !== 'Paid' ? {
+        ...b,
+        spaceName: space.name,
+        tenant: data.tenant,
+        rentAmount: data.rentPerMonth,
+        totalAmount: data.rentPerMonth,
+      } : b));
+    } else {
+      const newContract: ContractItem = {
+        id: `CT-${Date.now()}`,
+        contractNo: data.contractNo,
+        spaceId: data.spaceId,
+        spaceName: space.name,
+        area: space.area,
+        tenant: data.tenant,
+        tenantContact: data.tenantContact,
+        tenantLicense: data.tenantLicense,
+        rentPerMonth: data.rentPerMonth,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        status: data.status,
+        signDate: new Date().toISOString().split('T')[0],
+        totalRentReceived: 0,
+        outstandingRent: data.rentPerMonth,
+        performanceRating: data.performanceRating,
+      };
+
+      setContracts(prev => [...prev, newContract]);
+
+      // 房源状态联动：签合同后默认已出租
+      setSpaces(prev => prev.map(s => s.id === data.spaceId ? { ...s, status: '已出租', monthlyRent: data.rentPerMonth } : s));
+
+      // 可选：生成当月一笔待缴租金账单
+      const ym = new Date().toISOString().slice(0, 7);
+      const dueDate = `${ym}-05`;
+      const existedBill = rentBills.some(b => b.contractId === newContract.id && b.period === ym);
+      if (!existedBill) {
+        const newBill: RentBill = {
+          id: `RB-${Date.now()}`,
+          contractId: newContract.id,
+          spaceName: newContract.spaceName,
+          tenant: newContract.tenant,
+          period: ym,
+          rentAmount: data.rentPerMonth,
+          lateFee: 0,
+          totalAmount: data.rentPerMonth,
+          dueDate,
+          status: 'Unpaid',
+          paidAmount: 0,
+          reminderCount: 0,
+        };
+        setRentBills(prev => [...prev, newBill]);
+      }
+    }
+
+    setShowContractUpsert(false);
+    setEditingContract(null);
+  };
+
+  const handleDeleteContract = (contract: ContractItem) => {
+    const hasUnpaid = rentBills.some(b => b.contractId === contract.id && b.status !== 'Paid');
+    if (hasUnpaid) {
+      alert('该合同存在未缴账单，请先处理账单再删除合同');
+      return;
+    }
+
+    // 删除合同
+    setContracts(prev => prev.filter(c => c.id !== contract.id));
+
+    // 删除关联账单（保险起见：仅删除该合同的账单）
+    setRentBills(prev => prev.filter(b => b.contractId !== contract.id));
+
+    // 房源状态回退：若该房源没有其他合同，则回到公开招租
+    const stillHasOther = contracts.some(c => c.spaceId === contract.spaceId && c.id !== contract.id);
+    if (!stillHasOther) {
+      setSpaces(prev => prev.map(s => s.id === contract.spaceId ? { ...s, status: '公开招租' } : s));
+    }
+
+    setDeletingContract(null);
+  };
+
   const handlePayRent = (bill: RentBill, amount: number, method: string, transactionNo: string) => {
     const newPaidAmount = bill.paidAmount + amount;
     const newStatus = newPaidAmount >= bill.totalAmount ? 'Paid' : 'PartialPaid';
@@ -855,9 +991,22 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                     <option value="Expired">已到期</option>
                   </select>
                 </div>
-                <button className="text-xs px-3 py-1.5 border border-[#dee0e3] rounded flex items-center gap-1 hover:bg-gray-50">
-                  <Download size={14} /> 导出
-                </button>
+                <div className="flex items-center gap-2">
+                  {isAssetAdmin && (
+                    <button
+                      onClick={() => {
+                        setEditingContract(null);
+                        setShowContractUpsert(true);
+                      }}
+                      className="text-xs px-3 py-1.5 bg-[#3370ff] text-white rounded flex items-center gap-1 hover:bg-[#285cc9]"
+                    >
+                      <Plus size={14} /> 新增合同
+                    </button>
+                  )}
+                  <button className="text-xs px-3 py-1.5 border border-[#dee0e3] rounded flex items-center gap-1 hover:bg-gray-50">
+                    <Download size={14} /> 导出
+                  </button>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -910,12 +1059,33 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                             </div>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={() => { setSelectedContract(contract); setShowContractDetail(true); }}
-                              className="text-[#3370ff] hover:underline text-xs"
-                            >
-                              详情
-                            </button>
+                            <div className="flex items-center justify-center gap-3">
+                              <button
+                                onClick={() => { setSelectedContract(contract); setShowContractDetail(true); }}
+                                className="text-[#3370ff] hover:underline text-xs"
+                              >
+                                详情
+                              </button>
+                              {isAssetAdmin && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setEditingContract(contract);
+                                      setShowContractUpsert(true);
+                                    }}
+                                    className="text-[#3370ff] hover:underline text-xs"
+                                  >
+                                    编辑
+                                  </button>
+                                  <button
+                                    onClick={() => setDeletingContract(contract)}
+                                    className="text-red-600 hover:underline text-xs"
+                                  >
+                                    删除
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
