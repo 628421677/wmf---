@@ -503,11 +503,6 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
                         setSelectedProject(project);
                         setDetailTab('form');
                       }}
-                      onEdit={() => {
-                        setEditingProject(project);
-                        setIsProjectFormOpen(true);
-                      }}
-                      onDelete={() => handleDeleteProject(project)}
                       onArchive={() => handleArchiveProject(project)}
                       userRole={userRole}
                       onProcess={() => handleProcess(project)}
@@ -643,14 +638,12 @@ const ConfirmDialog: React.FC<{
 const ProjectActionsCell: React.FC<{
   project: Project;
   onView: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
   onArchive: () => void;
   userRole: UserRole;
   onProcess: () => void;
   nextAction: { text: string; nextStatus: AssetStatus } | null;
   canProceed: boolean;
-}> = ({ project, onView, onEdit, onDelete, onArchive, userRole, onProcess, nextAction, canProceed }) => {
+}> = ({ project, onView, onArchive, userRole, onProcess, nextAction, canProceed }) => {
   return (
     <div className="flex items-center gap-2">
       {/* 查看按钮 */}
@@ -662,48 +655,25 @@ const ProjectActionsCell: React.FC<{
         <Eye size={16} />
       </button>
 
-      {/* 管理员操作按钮组 */}
-      {userRole === UserRole.AssetAdmin && !project.isArchived && (
-        <>
-          {/* 编辑按钮 */}
-          <button
-            onClick={onEdit}
-            className="text-gray-600 hover:text-gray-800 p-1"
-            title="编辑"
-          >
-            <Edit size={16} />
-          </button>
+      {/* 归档按钮（仅“档案归档阶段”显示，点击后标记项目归档） */}
+      {userRole === UserRole.AssetAdmin && !project.isArchived && project.status === AssetStatus.Archive && (
+        <button
+          onClick={onArchive}
+          className="text-purple-600 hover:text-purple-800 p-1"
+          title="归档"
+        >
+          <Archive size={16} />
+        </button>
+      )}
 
-          {/* 删除按钮 */}
-          <button
-            onClick={onDelete}
-            className="text-red-600 hover:text-red-800 p-1"
-            title="删除"
-          >
-            <Trash2 size={16} />
-          </button>
-
-          {/* 归档按钮（仅“档案归档阶段”显示，点击后标记项目归档） */}
-          {project.status === AssetStatus.Archive && (
-            <button
-              onClick={onArchive}
-              className="text-purple-600 hover:text-purple-800 p-1"
-              title="归档"
-            >
-              <Archive size={16} />
-            </button>
-          )}
-
-          {/* 流程推进按钮 */}
-          {nextAction && canProceed && (
-            <button
-              onClick={onProcess}
-              className="text-xs border border-[#3370ff] text-[#3370ff] px-2 py-1 rounded hover:bg-[#e1eaff] flex items-center gap-1"
-            >
-              {nextAction.text} <ArrowRight size={12} />
-            </button>
-          )}
-        </>
+      {/* 流程推进按钮 */}
+      {userRole === UserRole.AssetAdmin && !project.isArchived && nextAction && canProceed && (
+        <button
+          onClick={onProcess}
+          className="text-xs border border-[#3370ff] text-[#3370ff] px-2 py-1 rounded hover:bg-[#e1eaff] flex items-center gap-1"
+        >
+          {nextAction.text} <ArrowRight size={12} />
+        </button>
       )}
 
       {/* 已归档项目标识 */}
