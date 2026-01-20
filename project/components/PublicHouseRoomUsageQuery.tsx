@@ -109,7 +109,7 @@ const computeIdleInfo = (availability: any, vacantSince?: string) => {
 
 // 合规状态计算（实际用途与核定用途对比）
 const computeComplianceStatus = (approvedPurpose: string, actualPurpose: string): UsageComplianceStatus => {
-  if (!actualPurpose || actualPurpose === '待核查') return '待核查';
+  if (!actualPurpose) return '待核查';
   return actualPurpose === approvedPurpose ? '完全合规（实际 = 核定）' : '擅自变更（实际≠核定）';
 };
 
@@ -200,8 +200,8 @@ const buildDerivedRows = (): RoomUsageRow[] => {
     const roomId = `RM-${r.roomNo}`;
     const approvedPurpose = getUseTypeLabel(r.useType);
     const approvedPurposeDetail = mapApprovedPurposeDetail(r.useType);
-    // 实际用途：可分配状态时为待核查，否则默认与核定用途一致
-    const actualPurpose = r.availability === 'Available' ? '待核查' : approvedPurpose;
+    // 实际用途：默认与核定用途一致（不显示“待核查”）
+    const actualPurpose = approvedPurpose;
     const complianceStatus = computeComplianceStatus(approvedPurpose, actualPurpose);
     const key = `${r.buildingName}-${r.roomNo}`;
     const change = changeByKey.get(key);
