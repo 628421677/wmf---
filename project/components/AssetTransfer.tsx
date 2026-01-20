@@ -835,6 +835,7 @@ interface NewProjectModalProps {
 }
 
 const NewProjectModal: React.FC<NewProjectModalProps> = ({ onClose, onAddProject, existingProjectCount }) => {
+  const [newAttachments, setNewAttachments] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     contractor: '',
@@ -879,7 +880,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({ onClose, onAddProject
           notes: '项目立项',
         },
       ],
-      attachments: [],
+      attachments: newAttachments,
       isOverdue: false,
       isArchived: false, // 默认未归档
     };
@@ -1042,6 +1043,92 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({ onClose, onAddProject
                     onChange={e => updateField('plannedEndDate', e.target.value)}
                     className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* 上传附件（模拟） */}
+            <div>
+              <h4 className="font-medium text-[#1f2329] mb-4 flex items-center gap-2">
+                <Paperclip size={16} /> 上传附件（模拟）
+              </h4>
+              <div className="border border-[#dee0e3] rounded-lg p-4 bg-white space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <select
+                    id="new-project-upload-type"
+                    className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                    defaultValue="other"
+                  >
+                    <option value="approval">立项批复</option>
+                    <option value="bidding">招标文件</option>
+                    <option value="contract">施工合同</option>
+                    <option value="change">变更签证</option>
+                    <option value="drawing">竣工图纸</option>
+                    <option value="acceptance">验收报告</option>
+                    <option value="audit">审计报告</option>
+                    <option value="other">其他</option>
+                  </select>
+                  <input
+                    id="new-project-upload-name"
+                    className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none sm:col-span-2"
+                    placeholder="请输入附件名称，例如：施工合同.pdf"
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const typeEl = document.getElementById('new-project-upload-type') as HTMLSelectElement | null;
+                      const nameEl = document.getElementById('new-project-upload-name') as HTMLInputElement | null;
+                      const type = (typeEl?.value || 'other') as any;
+                      const name = (nameEl?.value || '').trim();
+                      if (!name) {
+                        alert('请输入附件名称');
+                        return;
+                      }
+                      const newAtt = {
+                        id: `ATT-${Date.now()}`,
+                        name,
+                        type,
+                        uploadDate: new Date().toISOString().split('T')[0],
+                        uploadedByDept: '二级学院',
+                        reviewStatus: 'Pending' as const,
+                      };
+                      setNewAttachments(prev => [...prev, newAtt]);
+                      if (nameEl) nameEl.value = '';
+                    }}
+                    className="text-xs px-3 py-2 bg-[#3370ff] text-white rounded flex items-center gap-1 hover:bg-[#285cc9]"
+                  >
+                    <Plus size={14} /> 上传（模拟）
+                  </button>
+                </div>
+
+                {newAttachments.length > 0 && (
+                  <div className="pt-2">
+                    <div className="text-xs text-[#646a73] mb-2">已添加附件（{newAttachments.length}）</div>
+                    <div className="grid gap-2">
+                      {newAttachments.map(att => (
+                        <div key={att.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-[#f9fafb] border border-[#dee0e3]">
+                          <div className="min-w-0">
+                            <div className="font-medium text-[#1f2329] truncate">{att.name}</div>
+                            <div className="text-xs text-[#8f959e]">类型：{att.type} | 状态：待审核</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setNewAttachments(prev => prev.filter(x => x.id !== att.id))}
+                            className="text-red-600 hover:text-red-800 p-1"
+                            title="移除"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-xs text-[#8f959e]">
+                  说明：此处为模拟上传。创建项目后，可在“表单信息”中对附件进行审核/驳回/批量通过。
                 </div>
               </div>
             </div>
