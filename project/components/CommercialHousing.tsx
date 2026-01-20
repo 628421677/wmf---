@@ -1550,8 +1550,8 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                         <YAxis stroke="#8f959e" tick={{ fontSize: 12 }} />
                         <Tooltip contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #dee0e3' }} />
                         <Legend />
-                        <Bar dataKey="应收" fill="#94a3b8" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="实收" fill="#3370ff" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="应收" fill="#22c55e" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
