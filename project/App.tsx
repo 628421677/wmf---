@@ -254,10 +254,10 @@ const App: React.FC = () => {
         case 'rules-alert': return <>{rulesCrumb} <span className="text-[#1f2329]"> / 预警规则</span></>;
 
         // Hall Breadcrumbs
-        case 'assets': return <>{hallCrumb} <span className="text-[#1f2329]"> / 资产建设与转固</span></>;
-        case 'allocation': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公用房归口调配</span></>;
-        case 'fees': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公用房使用收费</span></>;
-        case 'commercial': return <>{hallCrumb} <span className="text-[#1f2329]"> / 经营与周转房</span></>;
+        case 'assets': return <>{hallCrumb} <span className="text-[#1f2329]"> / 资产转固与管理</span></>;
+        case 'allocation': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公用房归口调配管理</span></>;
+        case 'fees': return <>{hallCrumb} <span className="text-[#1f2329]"> / 校内公用房使用收费管理</span></>;
+        case 'commercial': return <>{hallCrumb} <span className="text-[#1f2329]"> / 经营性用房与周转房管理</span></>;
         case 'maintenance': return <>{hallCrumb} <span className="text-[#1f2329]"> / 维修与物业</span></>;
         case 'inventory': return <>{hallCrumb} <span className="text-[#1f2329]"> / 房产盘点核查</span></>;
         case 'public-house-query': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公用房综合查询</span></>;
@@ -277,10 +277,10 @@ const App: React.FC = () => {
   };
 
   const hallSubMenus: { id: View; label: string; roles: UserRole[] }[] = [
-    { id: 'assets', label: '资产建设与转固', roles: [UserRole.AssetAdmin] },
-    { id: 'allocation', label: '公用房归口调配', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
-    { id: 'fees', label: '公用房使用收费', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
-    { id: 'commercial', label: '经营与周转房', roles: [UserRole.AssetAdmin, UserRole.Teacher, UserRole.Guest] },
+    { id: 'assets', label: '资产转固与管理', roles: [UserRole.AssetAdmin] },
+    { id: 'allocation', label: '公用房归口调配管理', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+    { id: 'fees', label: '校内公用房使用收费管理', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+    { id: 'commercial', label: '经营性用房与周转房管理', roles: [UserRole.AssetAdmin, UserRole.Teacher, UserRole.Guest] },
     { id: 'maintenance', label: '维修与物业', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin, UserRole.Teacher] },
     { id: 'inventory', label: '房产盘点核查', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
     { id: 'public-house-query', label: '公用房综合查询', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
