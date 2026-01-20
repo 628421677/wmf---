@@ -2179,7 +2179,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               </div>
 
               {/* 新增拆分项 */}
-              {asInfrastructureDept && !project.isArchived && (
+              {asInfrastructureDept && !isReadOnly && (
                 <div className="border border-[#dee0e3] rounded-lg p-4">
                   <h4 className="font-medium text-[#1f2329] mb-4">新增拆分项</h4>
                   <div className="grid grid-cols-3 gap-4">

@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { CheckCircle } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { CheckCircle, Plus, Trash2 } from 'lucide-react';
 import { RoomFunctionPlanItem, UserRole } from '../types';
 import { getMainCategories, getSubCategories } from '../utils/roomFunctionCatalog';
 
@@ -16,6 +16,7 @@ interface RoomFunctionPlanTabProps {
 }
 
 const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
+  projectName,
   plan,
   onChange,
   confirmed,
@@ -29,9 +30,55 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
 
   const canEdit = userRole === UserRole.AssetAdmin && !disabled;
 
+  const [newRow, setNewRow] = useState<{ buildingName: string; roomNo: string; area: string }>(() => ({
+    buildingName: (plan[0]?.buildingName || projectName || '').trim(),
+    roomNo: '',
+    area: '',
+  }));
+
   const updateRow = (id: string, patch: Partial<RoomFunctionPlanItem>) => {
     if (!canEdit) return;
     onChange(plan.map(r => (r.id === id ? { ...r, ...patch } : r)));
+  };
+
+  const addRow = () => {
+    if (!canEdit) return;
+
+    const buildingName = (newRow.buildingName || '').trim();
+    const roomNo = (newRow.roomNo || '').trim();
+    const area = Number(newRow.area);
+
+    if (!buildingName) {
+      alert('请输入建筑名称');
+      return;
+    }
+    if (!roomNo) {
+      alert('请输入房间号');
+      return;
+    }
+    if (!Number.isFinite(area) || area <= 0) {
+      alert('请输入正确的面积');
+      return;
+    }
+
+    const item: RoomFunctionPlanItem = {
+      id: `RFP-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      buildingName,
+      roomNo,
+      area,
+      mainCategory: '',
+      subCategory: '',
+      remark: undefined,
+    };
+
+    onChange([item, ...plan]);
+    setNewRow(p => ({ ...p, roomNo: '', area: '' }));
+  };
+
+  const removeRow = (id: string) => {
+    if (!canEdit) return;
+    if (!confirm('确定要删除该房间吗？')) return;
+    onChange(plan.filter(p => p.id !== id));
   };
 
   return (
@@ -41,7 +88,8 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
           <div className="text-sm text-[#646a73]">归档前必须完成建筑-房间功能划分（按主类/亚类）。</div>
           {confirmed ? (
             <div className="text-xs text-green-700 mt-1 flex items-center gap-1">
-              <CheckCircle size={14} /> 已确认 {confirmedAt ? `(${new Date(confirmedAt).toLocaleString()})` : ''} {confirmedBy ? `| ${confirmedBy}` : ''}
+              <CheckCircle size={14} /> 已确认 {confirmedAt ? `(${new Date(confirmedAt).toLocaleString()})` : ''}{' '}
+              {confirmedBy ? `| ${confirmedBy}` : ''}
             </div>
           ) : (
             <div className="text-xs text-amber-700 mt-1">未确认：归档将被阻止</div>
@@ -58,6 +106,52 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
         )}
       </div>
 
+      {/* 新增房间 */}
+      {canEdit && (
+        <div className="border border-[#dee0e3] rounded-lg p-4 bg-[#fcfcfd]">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs text-[#646a73] mb-1">建筑名称</label>
+              <input
+                className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                value={newRow.buildingName}
+                onChange={e => setNewRow(p => ({ ...p, buildingName: e.target.value }))}
+                placeholder="如：理科实验楼A座"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#646a73] mb-1">房间号</label>
+              <input
+                className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                value={newRow.roomNo}
+                onChange={e => setNewRow(p => ({ ...p, roomNo: e.target.value }))}
+                placeholder="如：3-305"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#646a73] mb-1">面积(㎡)</label>
+              <input
+                type="number"
+                className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                value={newRow.area}
+                onChange={e => setNewRow(p => ({ ...p, area: e.target.value }))}
+                placeholder="如：85"
+                min={0}
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={addRow}
+                className="w-full px-3 py-2 bg-[#3370ff] text-white rounded text-sm hover:bg-[#285cc9] flex items-center justify-center gap-1"
+              >
+                <Plus size={14} /> 添加房间
+              </button>
+            </div>
+          </div>
+          <div className="text-xs text-[#8f959e] mt-2">说明：已归档后资产处仍可新增/删除房间，并继续维护主类/亚类。</div>
+        </div>
+      )}
 
       {/* 列表 */}
       <div className="overflow-hidden border border-[#dee0e3] rounded-lg">
@@ -70,6 +164,7 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
               <th className="px-4 py-2 text-left">主类</th>
               <th className="px-4 py-2 text-left">亚类</th>
               <th className="px-4 py-2 text-left">备注</th>
+              <th className="px-4 py-2 text-center">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#dee0e3]">
@@ -89,8 +184,11 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
                         updateRow(r.id, { mainCategory: main, subCategory: nextSubs[0]?.value || '' });
                       }}
                     >
+                      <option value="">请选择</option>
                       {mains.map(m => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
                       ))}
                     </select>
                   ) : (
@@ -103,10 +201,16 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
                       className="w-full border border-[#dee0e3] rounded px-2 py-1 text-sm"
                       value={r.subCategory || ''}
                       onChange={e => updateRow(r.id, { subCategory: e.target.value })}
+                      disabled={!r.mainCategory}
                     >
-                      {getSubCategories((r.mainCategory || '') as any).map(s => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
-                      ))}
+                      <option value="">请选择</option>
+                      {r.mainCategory
+                        ? getSubCategories(r.mainCategory as any).map(s => (
+                            <option key={s.value} value={s.value}>
+                              {s.label}
+                            </option>
+                          ))
+                        : null}
                     </select>
                   ) : (
                     <span>{r.subCategory || '-'}</span>
@@ -124,11 +228,27 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
                     <span className="text-[#646a73]">{r.remark || '-'}</span>
                   )}
                 </td>
+                <td className="px-4 py-2 text-center">
+                  {canEdit ? (
+                    <button
+                      type="button"
+                      onClick={() => removeRow(r.id)}
+                      className="text-red-600 hover:text-red-700"
+                      title="删除"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  ) : (
+                    <span className="text-xs text-[#8f959e]">-</span>
+                  )}
+                </td>
               </tr>
             ))}
             {plan.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-[#8f959e]">暂无房间功能划分数据</td>
+                <td colSpan={7} className="px-4 py-8 text-center text-[#8f959e]">
+                  暂无房间功能划分数据
+                </td>
               </tr>
             )}
           </tbody>
@@ -139,6 +259,3 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
 };
 
 export default RoomFunctionPlanTab;
-
-
-
