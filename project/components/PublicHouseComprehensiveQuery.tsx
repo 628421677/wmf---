@@ -5,9 +5,10 @@ import PublicHouseOnePersonMultiRoom from './PublicHouseOnePersonMultiRoom';
 import PublicHouseDeptOverview from './PublicHouseDeptOverview';
 import PublicHouseQuotaManagement from './PublicHouseQuotaManagement';
 import PublicHouseRoomUsageQuery from './PublicHouseRoomUsageQuery';
+import PublicHouseCommercialQuery from './PublicHouseCommercialQuery';
 import { MOCK_DEPARTMENT_QUOTAS } from '../constants';
 
-type FeatureKey = 'onePersonMultiRoom' | 'oneRoomMultiPerson' | 'deptOverview' | 'quotaQuery' | 'roomUsageQuery';
+type FeatureKey = 'onePersonMultiRoom' | 'oneRoomMultiPerson' | 'deptOverview' | 'quotaQuery' | 'roomUsageQuery' | 'commercialQuery';
 
 type TabDef = {
   key: FeatureKey;
@@ -20,7 +21,8 @@ const tabs: TabDef[] = [
   { key: 'oneRoomMultiPerson', label: '一房多人', icon: Home },
   { key: 'deptOverview', label: '部门概况', icon: Building2 },
   { key: 'quotaQuery', label: '定额查询', icon: ClipboardList },
-  { key: 'roomUsageQuery', label: '房间用途查询', icon: Layers },
+  { key: 'roomUsageQuery', label: '公用房查询', icon: Layers },
+  { key: 'commercialQuery', label: '商用房查询', icon: Building2 },
 ];
 
 const PublicHouseComprehensiveQuery: React.FC = () => {
@@ -35,7 +37,7 @@ const PublicHouseComprehensiveQuery: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold text-[#1f2329] flex items-center gap-2">
             <Building2 size={24} className="text-[#3370ff]" />
-            公用房综合查询
+            公房综合查询
           </h2>
           <p className="text-[#646a73]">面向公用房多维度查询与统计分析（结构已搭建，可逐步接入接口与查询条件）。</p>
         </div>
@@ -91,6 +93,8 @@ const PublicHouseComprehensiveQuery: React.FC = () => {
         <PublicHouseQuotaManagement quotas={MOCK_DEPARTMENT_QUOTAS} />
       ) : activeTab === 'roomUsageQuery' ? (
         <PublicHouseRoomUsageQuery keyword={keyword} />
+      ) : activeTab === 'commercialQuery' ? (
+        <PublicHouseCommercialQuery keyword={keyword} />
       ) : (
         <div className="bg-white border rounded-lg shadow-sm">
           <div className="p-4 border-b">

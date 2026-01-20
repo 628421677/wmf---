@@ -536,7 +536,7 @@ const PublicHouseRoomUsageQuery: React.FC<PublicHouseRoomUsageQueryProps> = ({ k
       {/* 头部（标题+新增按钮） */}
       <div className="p-4 border-b flex justify-between items-center">
         <div>
-          <h3 className="font-bold text-[#1f2329]">房间用途查询（按房间维度）</h3>
+          <h3 className="font-bold text-[#1f2329]">公用房查询（按房间维度）</h3>
           <p className="text-sm text-[#646a73] mt-1">支持房间用途的增删改查与合规性管理</p>
         </div>
         <button
