@@ -851,6 +851,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         name: initialProject.name,
         contractor: initialProject.contractor,
         contractAmount: String(initialProject.contractAmount),
+        auditAmount: initialProject.auditAmount ? String(initialProject.auditAmount) : '',
         fundSource: initialProject.fundSource,
         location: initialProject.location || '',
         plannedArea: String(initialProject.plannedArea || ''),
@@ -867,6 +868,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
       name: '',
       contractor: '',
       contractAmount: '',
+      auditAmount: '',
       fundSource: FundSource.Fiscal,
       location: '',
       plannedArea: '',
@@ -884,11 +886,19 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
     if (!formData.name || !formData.contractAmount) return;
 
     if (mode === 'edit' && initialProject) {
+      const contractAmount = Number(formData.contractAmount);
+      const auditAmount = (formData as any).auditAmount ? Number((formData as any).auditAmount) : undefined;
+      const auditReductionRate = (auditAmount !== undefined && contractAmount > 0)
+        ? Number((((contractAmount - auditAmount) / contractAmount) * 100).toFixed(2))
+        : undefined;
+
       const updatedProject: Project = {
         ...initialProject,
         name: formData.name,
         contractor: formData.contractor || '未指定',
-        contractAmount: Number(formData.contractAmount),
+        contractAmount,
+        auditAmount,
+        auditReductionRate,
         fundSource: formData.fundSource,
         location: formData.location,
         plannedArea: formData.plannedArea ? Number(formData.plannedArea) : undefined,
@@ -907,11 +917,19 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
       return;
     }
 
+    const contractAmount = Number(formData.contractAmount);
+    const auditAmount = (formData as any).auditAmount ? Number((formData as any).auditAmount) : undefined;
+    const auditReductionRate = (auditAmount !== undefined && contractAmount > 0)
+      ? Number((((contractAmount - auditAmount) / contractAmount) * 100).toFixed(2))
+      : undefined;
+
     const newProject: Project = {
       id: `PRJ-${new Date().getFullYear()}-${String(existingProjectCount + 1).padStart(3, '0')}`,
       name: formData.name,
       contractor: formData.contractor || '未指定',
-      contractAmount: Number(formData.contractAmount),
+      contractAmount,
+      auditAmount,
+      auditReductionRate,
       status: AssetStatus.Construction,
       completionDate: formData.plannedEndDate || new Date().toISOString().split('T')[0],
       hasCadData: false,
@@ -998,6 +1016,29 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
                     required
                     min={0}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#646a73] mb-1">审计金额 (元)</label>
+                  <input
+                    type="number"
+                    value={(formData as any).auditAmount}
+                    onChange={e => updateField('auditAmount', e.target.value)}
+                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                    placeholder="例如: 9500000"
+                    min={0}
+                  />
+                  <div className="text-xs text-[#8f959e] mt-1">
+                    审减率：{
+                      (() => {
+                        const contract = Number((formData as any).contractAmount);
+                        const audit = Number((formData as any).auditAmount);
+                        if (!contract || !audit) return '-';
+                        const rate = ((contract - audit) / contract) * 100;
+                        if (!Number.isFinite(rate)) return '-';
+                        return `${rate.toFixed(2)}%`;
+                      })()
+                    }
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#646a73] mb-1">资金来源</label>
