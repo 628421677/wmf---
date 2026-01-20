@@ -197,11 +197,175 @@ const initSpaces: SpaceItem[] = [
         bidDate: '2025-01-14',
         status: 'Valid',
       },
+      {
+        id: 'BID-SP-001-004',
+        company: '福建校园优选超市有限公司',
+        contactPerson: '赵经理',
+        contactPhone: '18600186001',
+        amount: 11000,
+        depositPaid: true,
+        bidDate: '2025-01-15',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-001-005',
+        company: '福州轻食研究所餐饮有限公司',
+        contactPerson: '林总',
+        contactPhone: '18800188002',
+        amount: 10600,
+        depositPaid: true,
+        bidDate: '2025-01-16',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-001-006',
+        company: '福建乐享烘焙有限公司',
+        contactPerson: '黄主管',
+        contactPhone: '18500185003',
+        amount: 9200,
+        depositPaid: true,
+        bidDate: '2025-01-17',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-001-007',
+        company: '福州小满茶饮有限公司',
+        contactPerson: '吴经理',
+        contactPhone: '18700187004',
+        amount: 11400,
+        depositPaid: false,
+        bidDate: '2025-01-18',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-001-008',
+        company: '福建佳味餐饮有限公司',
+        contactPerson: '孙经理',
+        contactPhone: '18900189005',
+        amount: 11800,
+        depositPaid: true,
+        bidDate: '2025-01-19',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-001-009',
+        company: '福州拾光甜品有限公司',
+        contactPerson: '周经理',
+        contactPhone: '13300133006',
+        amount: 10000,
+        depositPaid: true,
+        bidDate: '2025-01-20',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-001-010',
+        company: '福建百味小吃管理有限公司',
+        contactPerson: '郑主管',
+        contactPhone: '13400134007',
+        amount: 10800,
+        depositPaid: false,
+        bidDate: '2025-01-21',
+        status: 'Valid',
+      },
     ],
   },
-  { id: 'SP-002', name: '二层 201 办公室', area: 150, status: '已出租', bids: [], monthlyRent: 12000 },
-  { id: 'SP-003', name: '一层 103 商铺', area: 80, status: '已出租', bids: [], monthlyRent: 8000 },
-  { id: 'SP-004', name: '三层 301-305 培训中心', area: 500, status: '已出租', bids: [], monthlyRent: 50000 },
+  {
+    id: 'SP-002',
+    name: '二层 201 办公室',
+    area: 150,
+    status: '公开招租',
+    monthlyRent: 12000,
+    bids: [
+      {
+        id: 'BID-SP-002-001',
+        company: '福建海岳咨询服务有限公司',
+        contactPerson: '陈经理',
+        contactPhone: '13600136001',
+        amount: 12500,
+        depositPaid: true,
+        bidDate: '2025-01-10',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-002-002',
+        company: '福州新航科技有限公司',
+        contactPerson: '周总',
+        contactPhone: '13500135002',
+        amount: 13200,
+        depositPaid: true,
+        bidDate: '2025-01-11',
+        status: 'Valid',
+      },
+    ],
+  },
+  {
+    id: 'SP-003',
+    name: '一层 103 商铺',
+    area: 80,
+    status: '公开招租',
+    monthlyRent: 8000,
+    bids: [
+      {
+        id: 'BID-SP-003-001',
+        company: '福州鲜果优选有限公司',
+        contactPerson: '林主管',
+        contactPhone: '15800158001',
+        amount: 8200,
+        depositPaid: true,
+        bidDate: '2025-01-09',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-003-002',
+        company: '福建暖心便利商业有限公司',
+        contactPerson: '黄经理',
+        contactPhone: '15900159002',
+        amount: 8600,
+        depositPaid: false,
+        bidDate: '2025-01-10',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-003-003',
+        company: '福州学府文创有限公司',
+        contactPerson: '吴总',
+        contactPhone: '15000150003',
+        amount: 9000,
+        depositPaid: true,
+        bidDate: '2025-01-11',
+        status: 'Valid',
+      },
+    ],
+  },
+  {
+    id: 'SP-004',
+    name: '三层 301-305 培训中心',
+    area: 500,
+    status: '公开招租',
+    monthlyRent: 50000,
+    bids: [
+      {
+        id: 'BID-SP-004-001',
+        company: '福建启航教育科技有限公司',
+        contactPerson: '许主任',
+        contactPhone: '13100131001',
+        amount: 52000,
+        depositPaid: true,
+        bidDate: '2025-01-08',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-004-002',
+        company: '福州未来之星培训中心',
+        contactPerson: '郑老师',
+        contactPhone: '13200132002',
+        amount: 50500,
+        depositPaid: true,
+        bidDate: '2025-01-09',
+        status: 'Valid',
+      },
+    ],
+  },
 ];
 
 const initContracts: ContractItem[] = [
@@ -1112,7 +1276,12 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                     {isAssetAdmin && space.status === '公开招租' && (
                       <div className="mt-3 pt-3 border-t border-[#dee0e3] flex gap-2">
                         <button
-                          onClick={() => setViewingBidsForSpace(space)}
+                          onClick={() => {
+                            // localStorage 里可能已有旧数据（bids 为空），导致弹窗显示“暂无竞标数据”
+                            // 这里用当前 state 中的最新 space 引用，避免使用 map 闭包中的旧对象
+                            const latest = spaces.find(s => s.id === space.id) ?? space;
+                            setViewingBidsForSpace(latest);
+                          }}
                           className="flex-1 text-xs py-1.5 border border-[#dee0e3] rounded hover:bg-gray-50"
                         >
                           查看竞标 ({space.bids.length})
