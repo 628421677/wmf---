@@ -29,6 +29,7 @@ import {
   Check,
   XCircle,
   RefreshCw,
+  Minus,
 } from 'lucide-react';
 // uuid dependency removed
 import { MOCK_PROJECTS } from '../constants';
@@ -845,6 +846,18 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
 }) => {
   const [newAttachments, setNewAttachments] = useState<any[]>(initialProject?.attachments || []);
 
+  const [roomRows, setRoomRows] = useState<any[]>(() => {
+    const seed = (initialProject as any)?.roomDetails;
+    return Array.isArray(seed)
+      ? seed.map((r: any) => ({
+          id: r.id || `ROOM-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          floor: r.floor,
+          roomNo: r.roomNo || '',
+          area: r.area ?? 0,
+        }))
+      : [];
+  });
+
   const [formData, setFormData] = useState(() => {
     if (mode === 'edit' && initialProject) {
       return {
@@ -859,6 +872,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         plannedEndDate: initialProject.plannedEndDate || '',
         projectManager: initialProject.projectManager || '',
         supervisor: initialProject.supervisor || '',
+        buildingName: (initialProject as any).buildingName || '',
         floorCount: String(initialProject.floorCount || ''),
         roomCount: String(initialProject.roomCount || ''),
       };
@@ -870,6 +884,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
       contractAmount: '',
       auditAmount: '',
       fundSource: FundSource.Fiscal,
+      buildingName: '',
       location: '',
       plannedArea: '',
       plannedStartDate: '',
@@ -900,10 +915,17 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         auditAmount,
         auditReductionRate,
         fundSource: formData.fundSource,
+        buildingName: (formData as any).buildingName,
         location: formData.location,
         plannedArea: formData.plannedArea ? Number(formData.plannedArea) : undefined,
         floorCount: formData.floorCount ? Number(formData.floorCount) : undefined,
         roomCount: formData.roomCount ? Number(formData.roomCount) : undefined,
+        roomDetails: roomRows.map((r: any) => ({
+          id: r.id,
+          floor: r.floor === '' || r.floor === null || r.floor === undefined ? undefined : Number(r.floor),
+          roomNo: (r.roomNo || '').trim(),
+          area: Number(r.area) || 0,
+        })),
         plannedStartDate: formData.plannedStartDate,
         plannedEndDate: formData.plannedEndDate,
         projectManager: formData.projectManager,
@@ -934,10 +956,17 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
       completionDate: formData.plannedEndDate || new Date().toISOString().split('T')[0],
       hasCadData: false,
       fundSource: formData.fundSource,
+      buildingName: (formData as any).buildingName,
       location: formData.location,
       plannedArea: formData.plannedArea ? Number(formData.plannedArea) : undefined,
       floorCount: formData.floorCount ? Number(formData.floorCount) : undefined,
       roomCount: formData.roomCount ? Number(formData.roomCount) : undefined,
+      roomDetails: roomRows.map((r: any) => ({
+        id: r.id,
+        floor: r.floor === '' || r.floor === null || r.floor === undefined ? undefined : Number(r.floor),
+        roomNo: (r.roomNo || '').trim(),
+        area: Number(r.area) || 0,
+      })),
       plannedStartDate: formData.plannedStartDate,
       plannedEndDate: formData.plannedEndDate,
       projectManager: formData.projectManager,
@@ -1061,6 +1090,15 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
               </h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
+                  <label className="block text-sm font-medium text-[#646a73] mb-1">建筑名称</label>
+                  <input
+                    value={(formData as any).buildingName}
+                    onChange={e => updateField('buildingName', e.target.value)}
+                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                    placeholder="例如：教学楼A栋"
+                  />
+                </div>
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-[#646a73] mb-1">建设地点</label>
                   <input
                     value={formData.location}
@@ -1113,6 +1151,133 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
                 </div>
               </div>
             </div>
+            {/* 楼层与房间明细 */}
+            <div>
+              <h4 className="font-medium text-[#1f2329] mb-4 flex items-center gap-2">
+                <Building size={16} /> 楼层与房间明细
+              </h4>
+
+              <div className="border border-[#dee0e3] rounded-lg overflow-hidden">
+                <div className="px-4 py-3 bg-[#fcfcfd] border-b border-[#dee0e3] flex items-center justify-between">
+                  <div className="text-sm text-[#646a73]">
+                    说明：楼层为可选项；当填写“楼层”数量后，可在此处选择 1~楼层数。
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoomRows(prev => [
+                        ...prev,
+                        {
+                          id: `ROOM-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                          floor: '',
+                          roomNo: '',
+                          area: '',
+                        },
+                      ]);
+                    }}
+                    className="text-xs px-3 py-2 bg-[#3370ff] text-white rounded flex items-center gap-1 hover:bg-[#285cc9]"
+                  >
+                    <Plus size={14} /> 新增行
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-[#f5f6f7] text-[#646a73] font-medium border-b border-[#dee0e3]">
+                      <tr>
+                        <th className="px-4 py-3 text-left">楼层（可选）</th>
+                        <th className="px-4 py-3 text-left">房间号</th>
+                        <th className="px-4 py-3 text-left">面积</th>
+                        <th className="px-4 py-3 text-center w-[90px]">操作</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#dee0e3]">
+                      {roomRows.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-6 text-center text-[#8f959e]">
+                            暂无明细，请点击“新增行”添加。
+                          </td>
+                        </tr>
+                      ) : (
+                        roomRows.map((row, idx) => {
+                          const floorCount = Number((formData as any).floorCount || 0);
+                          const hasFloorOptions = Number.isFinite(floorCount) && floorCount > 0;
+
+                          return (
+                            <tr key={row.id} className="hover:bg-[#f9f9f9]">
+                              <td className="px-4 py-3">
+                                {hasFloorOptions ? (
+                                  <select
+                                    value={row.floor ?? ''}
+                                    onChange={(e) => {
+                                      const v = e.target.value;
+                                      setRoomRows(prev => prev.map(r => r.id === row.id ? { ...r, floor: v } : r));
+                                    }}
+                                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                                  >
+                                    <option value="">不填</option>
+                                    {Array.from({ length: floorCount }, (_, i) => i + 1).map(f => (
+                                      <option key={f} value={String(f)}>{f}</option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <input
+                                    value={row.floor ?? ''}
+                                    onChange={(e) => {
+                                      const v = e.target.value;
+                                      setRoomRows(prev => prev.map(r => r.id === row.id ? { ...r, floor: v } : r));
+                                    }}
+                                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                                    placeholder="可不填"
+                                  />
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  value={row.roomNo ?? ''}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    setRoomRows(prev => prev.map(r => r.id === row.id ? { ...r, roomNo: v } : r));
+                                  }}
+                                  className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                                  placeholder="例如：302"
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={row.area ?? ''}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    setRoomRows(prev => prev.map(r => r.id === row.id ? { ...r, area: v } : r));
+                                  }}
+                                  className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                                  placeholder="m²"
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setRoomRows(prev => prev.filter(r => r.id !== row.id));
+                                  }}
+                                  className="text-xs px-2 py-2 border border-[#dee0e3] rounded hover:bg-gray-50"
+                                  title="删除"
+                                >
+                                  <Minus size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
             {/* 工期信息 */}
             <div>
               <h4 className="font-medium text-[#1f2329] mb-4 flex items-center gap-2">

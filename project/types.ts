@@ -335,6 +335,13 @@ export interface RoomFunctionPlanItem {
   remark?: string;
 }
 
+export interface ProjectRoomDetail {
+  id: string;
+  floor?: number;
+  roomNo: string;
+  area: number;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -351,6 +358,7 @@ export interface Project {
   
   // 核心字段
   fundSource: FundSource;           // 资金来源
+  buildingName?: string;            // 建筑名称
   location?: string;                // 建设地点
   plannedArea?: number;             // 规划建筑面积
   plannedStartDate?: string;        // 计划开工日期
@@ -365,6 +373,9 @@ export interface Project {
   // 地图选址与土地资源
   landParcelId?: string; // 关联土地资源ID
   locationPoint?: { lat: number; lng: number }; // 地图坐标
+
+  // 房间明细（用于楼层/房间/面积录入）
+  roomDetails?: ProjectRoomDetail[];
 
   // 房间功能划分 (归档前)
   roomFunctionPlan?: RoomFunctionPlanItem[];
