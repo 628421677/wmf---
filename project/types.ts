@@ -3,16 +3,15 @@
 export enum UserRole {
   Teacher = 'Teacher',             // 教师
   CollegeAdmin = 'CollegeAdmin',   // 二级学院管理员
-  InfrastructureDept = 'InfrastructureDept', // 基建处
   AssetAdmin = 'AssetAdmin',       // 资产处管理员
   Guest = 'Guest'                  // 游客
 }
 
 export enum AssetStatus {
-  Draft = 'Draft',                 // 基建处起草
-  PendingReview = 'PendingReview', // 待审核
-  PendingArchive = 'PendingArchive', // 待归档
-  Archive = 'Archive',             // 已归档
+  DisposalPending = 'DisposalPending', // 待处置
+  PendingReview = 'PendingReview',     // 待审核
+  PendingArchive = 'PendingArchive',   // 待归档
+  Archived = 'Archived',               // 已归档
 }
 
 export enum AllocationStatus {
@@ -333,19 +332,9 @@ export interface RoomFunctionPlanItem {
   remark?: string;
 }
 
-export interface ProjectRoomDetail {
-  id: string;
-  floor?: number;
-  roomNo: string;
-  area: number;
-}
-
 export interface Project {
   id: string;
   name: string;
-  transferApplicationSubmitted?: boolean; // 是否已发起转固申请（基建处->资产处）
-  transferApplicationSubmittedAt?: string;
-  transferApplicationSubmittedBy?: string;
   contractAmount: number;
   finalAmount?: number;       // 决算金额
   auditAmount?: number;       // 审计金额
@@ -356,10 +345,11 @@ export interface Project {
   hasCadData: boolean;
   isTempCardCreated?: boolean;
   isArchived?: boolean;          // 是否归档
+  floorCount?: number;
+  roomCount?: number;
   
   // 核心字段
   fundSource: FundSource;           // 资金来源
-  buildingName?: string;            // 建筑名称
   location?: string;                // 建设地点
   plannedArea?: number;             // 规划建筑面积
   plannedStartDate?: string;        // 计划开工日期
@@ -368,15 +358,10 @@ export interface Project {
   actualEndDate?: string;           // 实际竣工日期
   projectManager?: string;          // 项目负责人
   supervisor?: string;              // 监理单位
-  floorCount?: number;              // 楼层
-  roomCount?: number;               // 房间数
 
   // 地图选址与土地资源
   landParcelId?: string; // 关联土地资源ID
   locationPoint?: { lat: number; lng: number }; // 地图坐标
-
-  // 房间明细（用于楼层/房间/面积录入）
-  roomDetails?: ProjectRoomDetail[];
 
   // 房间功能划分 (归档前)
   roomFunctionPlan?: RoomFunctionPlanItem[];
@@ -433,7 +418,6 @@ export interface LandParcel {
   acquisitionMethod: 'Allocation' | 'Transfer'; // 划拨 | 出让
   redLineMap?: string; // 红线图 URL
 }
-
 export interface BuildingAsset {
   id: string;
   name: string;

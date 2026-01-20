@@ -32,8 +32,8 @@ export function getAttachmentTypeLabel(type: AttachmentType) {
 
 export const STAGE_ATTACHMENT_REQUIREMENTS: StageAttachmentRequirements[] = [
   {
-    stage: AssetStatus.Draft,
-    stageLabel: '基建处起草',
+    stage: AssetStatus.DisposalPending,
+    stageLabel: '待处置',
     requiredAttachments: [],
   },
   {

@@ -29,7 +29,6 @@ import {
   Check,
   XCircle,
   RefreshCw,
-  Minus,
 } from 'lucide-react';
 // uuid dependency removed
 import { MOCK_PROJECTS } from '../constants';
@@ -78,8 +77,6 @@ function useLocalStorage<T>(key: string, initialValue: T) {
 }
 
 const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
-  const isInfrastructureDept = userRole === UserRole.InfrastructureDept;
-  const isAssetAdmin = userRole === UserRole.AssetAdmin;
   const [projects, setProjects] = useLocalStorage<Project[]>('uniassets-projects-v2', MOCK_PROJECTS);
   const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('uniassets-audit-logs', []);
     const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
@@ -107,7 +104,7 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
       }))
       .filter(p => {
         const q = searchTerm.toLowerCase();
-        const statusLabel = getAssetStatusLabel(p.status, (p as any).isArchived).toLowerCase();
+        const statusLabel = getAssetStatusLabel(p.status).toLowerCase();
         const matchSearch = p.name.toLowerCase().includes(q) ||
                            p.id.toLowerCase().includes(q) ||
                            p.contractor.toLowerCase().includes(q) ||
@@ -120,9 +117,11 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
 
   // 统计数据
   const stats = useMemo(() => ({
-    pending: projects.filter(p => [AssetStatus.PendingReview, AssetStatus.PendingArchive].includes(p.status)).length,
-    constructionAmount: projects.filter(p => p.status === AssetStatus.Draft).reduce((acc, p) => acc + p.contractAmount, 0),
-    completed: projects.filter(p => p.status === AssetStatus.Archive).length,
+    pending: projects.filter(p => p.status === AssetStatus.PendingReview).length,
+    constructionAmount: projects
+      .filter(p => p.status !== AssetStatus.Archived)
+      .reduce((acc, p) => acc + p.contractAmount, 0),
+    completed: projects.filter(p => p.status === AssetStatus.Archived).length,
     overdue: projects.filter(p => p.isOverdue).length,
   }), [projects]);
 
@@ -144,31 +143,33 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
 
 
 
-  const getNextAction = (_status: AssetStatus): { text: string; nextStatus: AssetStatus } | null => {
-    return null;
+  const getNextAction = (status: AssetStatus): { text: string; nextStatus: AssetStatus } | null => {
+    const actions: Partial<Record<AssetStatus, { text: string; nextStatus: AssetStatus }>> = {
+      [AssetStatus.DisposalPending]: { text: '发起转固申请', nextStatus: AssetStatus.PendingReview },
+    };
+    return actions[status] || null;
   };
 
-  const handleSubmitTransfer = (project: Project) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id !== project.id) return p;
-      return {
-        ...p,
-        status: AssetStatus.PendingReview,
-        transferApplicationSubmitted: true,
-        transferApplicationSubmittedAt: new Date().toISOString(),
-        transferApplicationSubmittedBy: '基建处',
-      };
-    }));
-  };
+  // 处理项目流程推进（带审计日志）
+  const handleProcess = (project: Project) => {
+    const action = getNextAction(project.status);
+    if (!action) return;
 
-  const handleApproveToArchive = (project: Project) => {
-    setProjects(prev => prev.map(p => {
-      if (p.id !== project.id) return p;
-      return {
-        ...p,
-        status: AssetStatus.PendingArchive,
-      };
-    }));
+    // 记录状态变更日志
+    logAudit(
+      'status_change',
+      'project',
+      project.id,
+      project.name,
+      {
+        status: {
+          old: project.status,
+          new: action.nextStatus
+        }
+      }
+    );
+
+    setConfirmAction({ project, action: action.text });
   };
 
   const confirmProcess = () => {
@@ -196,8 +197,14 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
     setConfirmAction(null);
   };
 
-  const statusToMilestone = (_status: AssetStatus): ProjectMilestone => {
-    return ProjectMilestone.Transfer;
+  const statusToMilestone = (status: AssetStatus): ProjectMilestone => {
+    const map: Partial<Record<AssetStatus, ProjectMilestone>> = {
+      [AssetStatus.DisposalPending]: ProjectMilestone.Construction,
+      [AssetStatus.PendingReview]: ProjectMilestone.Transfer,
+      [AssetStatus.PendingArchive]: ProjectMilestone.Transfer,
+      [AssetStatus.Archived]: ProjectMilestone.Transfer,
+    };
+    return map[status] || ProjectMilestone.Transfer;
   };
 
   // 删除项目（带审计日志）
@@ -238,7 +245,7 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
 
     const updatedProject = {
       ...confirmDialog.project,
-      status: AssetStatus.Archive,
+      status: AssetStatus.Archived,
       isArchived: true
     };
 
@@ -357,9 +364,9 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-[#1f2329]">资产转固与管理</h2>
-          <p className="text-[#646a73]">流程：基建处起草 → 资产处待审核 → 待归档 → 已归档</p>
+          <p className="text-[#646a73]">全流程管理：立项 → 建设 → 竣工验收 → 审计决算 → 财务核算 → 转固入账</p>
         </div>
-        {(isAssetAdmin || isInfrastructureDept) && (
+        {userRole === UserRole.AssetAdmin && (
           <div className="flex gap-3">
             <button
               onClick={() => {
@@ -404,10 +411,10 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
             className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
           >
             <option value="all">全部状态</option>
-            <option value={AssetStatus.Draft}>基建处起草</option>
+            <option value={AssetStatus.DisposalPending}>待处置</option>
             <option value={AssetStatus.PendingReview}>待审核</option>
             <option value={AssetStatus.PendingArchive}>待归档</option>
-            <option value={AssetStatus.Archive}>已归档</option>
+            <option value={AssetStatus.Archived}>已归档</option>
           </select>
           <select
             value={fundSourceFilter}
@@ -482,8 +489,8 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
                   <td className="px-4 py-4">{project.floorCount ?? '-'}</td>
                   <td className="px-4 py-4">{project.roomCount ?? '-'}</td>
                   <td className="px-4 py-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getAssetStatusColor(project.status, project.isArchived)}`}>
-                      {getAssetStatusLabel(project.status, project.isArchived)}
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getAssetStatusColor(project.status)}`}>
+                      {getAssetStatusLabel(project.status)}
                     </span>
                   </td>
                   <td className="px-4 py-4">
@@ -494,13 +501,13 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
                         setDetailTab('form');
                       }}
                       onArchive={() => handleArchiveProject(project)}
-                      onSubmitTransfer={() => handleSubmitTransfer(project)}
-                      onApproveToArchive={() => handleApproveToArchive(project)}
                       userRole={userRole}
+                      onProcess={() => handleProcess(project)}
+                      nextAction={getNextAction(project.status)}
                       canProceed={(() => {
-                        if (project.status !== AssetStatus.PendingReview) return false;
-                        const stat = computeAttachmentCompletion(AssetStatus.PendingReview, project.attachments || []);
-                        return stat.missingRequired === 0 && stat.requiredApproved === stat.requiredTotal;
+                        const stat = computeAttachmentCompletion(project.status, project.attachments || []);
+                        const hasThisStageFile = stat.missingRequired === 0;
+                        return hasThisStageFile;
                       })()}
                     />
                   </td>
@@ -627,11 +634,11 @@ const ProjectActionsCell: React.FC<{
   project: Project;
   onView: () => void;
   onArchive: () => void;
-  onSubmitTransfer: () => void;
-  onApproveToArchive: () => void;
   userRole: UserRole;
+  onProcess: () => void;
+  nextAction: { text: string; nextStatus: AssetStatus } | null;
   canProceed: boolean;
-}> = ({ project, onView, onArchive, onSubmitTransfer, onApproveToArchive, userRole, canProceed }) => {
+}> = ({ project, onView, onArchive, userRole, onProcess, nextAction, canProceed }) => {
   return (
     <div className="flex items-center gap-2">
       {/* 查看按钮 */}
@@ -643,8 +650,8 @@ const ProjectActionsCell: React.FC<{
         <Eye size={16} />
       </button>
 
-      {/* 归档按钮（仅“档案归档阶段”显示，点击后标记项目归档） */}
-      {userRole === UserRole.AssetAdmin && !project.isArchived && project.status === AssetStatus.Archive && (
+      {/* 归档按钮：仅“待归档”状态下，资产处可归档 */}
+      {userRole === UserRole.AssetAdmin && !project.isArchived && project.status === AssetStatus.PendingArchive && (
         <button
           onClick={onArchive}
           className="text-purple-600 hover:text-purple-800 p-1"
@@ -654,30 +661,18 @@ const ProjectActionsCell: React.FC<{
         </button>
       )}
 
-      {/* 基建处：发起转固申请（Draft -> 待审核） */}
-      {userRole === UserRole.InfrastructureDept && project.status === AssetStatus.Draft && (
+      {/* 流程推进按钮 */}
+      {userRole === UserRole.AssetAdmin && !project.isArchived && nextAction && canProceed && (
         <button
-          onClick={onSubmitTransfer}
+          onClick={onProcess}
           className="text-xs border border-[#3370ff] text-[#3370ff] px-2 py-1 rounded hover:bg-[#e1eaff] flex items-center gap-1"
-          title="发起转固申请"
         >
-          发起申请 <ArrowRight size={12} />
-        </button>
-      )}
-
-      {/* 资产处：审核通过并进入待归档（待审核 -> 待归档） */}
-      {userRole === UserRole.AssetAdmin && project.status === AssetStatus.PendingReview && canProceed && (
-        <button
-          onClick={onApproveToArchive}
-          className="text-xs border border-green-600 text-green-700 px-2 py-1 rounded hover:bg-green-50 flex items-center gap-1"
-          title="审核通过并进入待归档"
-        >
-          审核通过 <Check size={12} />
+          {nextAction.text} <ArrowRight size={12} />
         </button>
       )}
 
       {/* 已归档项目标识 */}
-      {project.status === AssetStatus.Archive && (
+      {project.isArchived && (
         <span className="text-green-600 text-xs flex items-center gap-1">
           <CheckCircle size={12} /> 已归档
         </span>
@@ -707,7 +702,7 @@ const ProjectActions: React.FC<{
   asInfrastructureDept: boolean;
 }> = ({ project, onEdit, onDelete, onArchive, userRole, asInfrastructureDept }) => {
   const canEditDeleteForm = asInfrastructureDept && !project.isArchived;
-  const canArchive = userRole === UserRole.AssetAdmin && project.status === AssetStatus.Archive && !project.isArchived;
+  const canArchive = userRole === UserRole.AssetAdmin && project.status === AssetStatus.PendingArchive && !project.isArchived;
 
   return (
     <div className="flex flex-wrap gap-2 mt-4 border-t border-gray-200 pt-4">
@@ -822,18 +817,6 @@ const getFieldLabel = (field: string) => {
   return labels[field] || field;
 };
 
-const getCategoryLabel = (cat: AssetCategory) => {
-  const labels: Record<AssetCategory, string> = {
-    [AssetCategory.Building]: '房屋建筑物',
-    [AssetCategory.Land]: '土地',
-    [AssetCategory.Structure]: '构筑物',
-    [AssetCategory.Equipment]: '设备',
-    [AssetCategory.Greening]: '绿化',
-    [AssetCategory.Other]: '其他',
-  };
-  return labels[cat] || cat;
-};
-
 /* ========== 新建项目模态框 ========== */
 interface NewProjectModalProps {
   mode?: 'create' | 'edit';
@@ -854,52 +837,6 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
 }) => {
   const [newAttachments, setNewAttachments] = useState<any[]>(initialProject?.attachments || []);
 
-  const [roomRows, setRoomRows] = useState<any[]>(() => {
-    const seed = (initialProject as any)?.roomDetails;
-    return Array.isArray(seed)
-      ? seed.map((r: any) => ({
-          id: r.id || `ROOM-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          floor: r.floor,
-          roomNo: r.roomNo || '',
-          area: r.area ?? 0,
-        }))
-      : [];
-  });
-
-  const [splitItems, setSplitItems] = useState<AssetSplitItem[]>(() => {
-    const seed = (initialProject as any)?.splitItems;
-    return Array.isArray(seed) ? seed : [];
-  });
-
-  const [newSplitItem, setNewSplitItem] = useState<Partial<AssetSplitItem>>({
-    category: AssetCategory.Building,
-    depreciationMethod: 'StraightLine',
-    depreciationYears: 50,
-  });
-
-  const addSplitItemToLocal = () => {
-    if (!newSplitItem.name || !newSplitItem.amount) return;
-
-    const item: AssetSplitItem = {
-      id: `SPLIT-${Date.now()}`,
-      category: newSplitItem.category || AssetCategory.Building,
-      name: newSplitItem.name,
-      amount: Number(newSplitItem.amount),
-      area: newSplitItem.area ? Number(newSplitItem.area) : undefined,
-      quantity: newSplitItem.quantity ? Number(newSplitItem.quantity) : undefined,
-      depreciationYears: newSplitItem.depreciationYears || 50,
-      depreciationMethod: newSplitItem.depreciationMethod || 'StraightLine',
-    };
-
-    setSplitItems(prev => [...prev, item]);
-
-    setNewSplitItem({
-      category: AssetCategory.Building,
-      depreciationMethod: 'StraightLine',
-      depreciationYears: 50,
-    });
-  };
-
   const [formData, setFormData] = useState(() => {
     if (mode === 'edit' && initialProject) {
       return {
@@ -914,7 +851,6 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         plannedEndDate: initialProject.plannedEndDate || '',
         projectManager: initialProject.projectManager || '',
         supervisor: initialProject.supervisor || '',
-        buildingName: (initialProject as any).buildingName || '',
         floorCount: String(initialProject.floorCount || ''),
         roomCount: String(initialProject.roomCount || ''),
       };
@@ -926,7 +862,6 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
       contractAmount: '',
       auditAmount: '',
       fundSource: FundSource.Fiscal,
-      buildingName: '',
       location: '',
       plannedArea: '',
       plannedStartDate: '',
@@ -957,18 +892,10 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         auditAmount,
         auditReductionRate,
         fundSource: formData.fundSource,
-        buildingName: (formData as any).buildingName,
         location: formData.location,
         plannedArea: formData.plannedArea ? Number(formData.plannedArea) : undefined,
         floorCount: formData.floorCount ? Number(formData.floorCount) : undefined,
         roomCount: formData.roomCount ? Number(formData.roomCount) : undefined,
-        roomDetails: roomRows.map((r: any) => ({
-          id: r.id,
-          floor: r.floor === '' || r.floor === null || r.floor === undefined ? undefined : Number(r.floor),
-          roomNo: (r.roomNo || '').trim(),
-          area: Number(r.area) || 0,
-        })),
-        splitItems,
         plannedStartDate: formData.plannedStartDate,
         plannedEndDate: formData.plannedEndDate,
         projectManager: formData.projectManager,
@@ -995,22 +922,14 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
       contractAmount,
       auditAmount,
       auditReductionRate,
-      status: AssetStatus.Draft,
+      status: AssetStatus.DisposalPending,
       completionDate: formData.plannedEndDate || new Date().toISOString().split('T')[0],
       hasCadData: false,
       fundSource: formData.fundSource,
-      buildingName: (formData as any).buildingName,
       location: formData.location,
       plannedArea: formData.plannedArea ? Number(formData.plannedArea) : undefined,
       floorCount: formData.floorCount ? Number(formData.floorCount) : undefined,
       roomCount: formData.roomCount ? Number(formData.roomCount) : undefined,
-      roomDetails: roomRows.map((r: any) => ({
-        id: r.id,
-        floor: r.floor === '' || r.floor === null || r.floor === undefined ? undefined : Number(r.floor),
-        roomNo: (r.roomNo || '').trim(),
-        area: Number(r.area) || 0,
-      })),
-      splitItems,
       plannedStartDate: formData.plannedStartDate,
       plannedEndDate: formData.plannedEndDate,
       projectManager: formData.projectManager,
@@ -1134,15 +1053,6 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
               </h4>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-[#646a73] mb-1">建筑名称</label>
-                  <input
-                    value={(formData as any).buildingName}
-                    onChange={e => updateField('buildingName', e.target.value)}
-                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
-                    placeholder="例如：教学楼A栋"
-                  />
-                </div>
-                <div className="col-span-2">
                   <label className="block text-sm font-medium text-[#646a73] mb-1">建设地点</label>
                   <input
                     value={formData.location}
@@ -1195,270 +1105,6 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
                 </div>
               </div>
             </div>
-            {/* 资产拆分 */}
-            <div>
-              <h4 className="font-medium text-[#1f2329] mb-4 flex items-center gap-2">
-                <Layers size={16} /> 资产拆分
-              </h4>
-
-              {/* 已拆分项 */}
-              <div className="space-y-3">
-                {splitItems.length > 0 ? (
-                  <div className="overflow-hidden border border-[#dee0e3] rounded-lg">
-                    <table className="w-full text-sm">
-                      <thead className="bg-[#f5f6f7] text-[#646a73]">
-                        <tr>
-                          <th className="px-4 py-2 text-left">资产类别</th>
-                          <th className="px-4 py-2 text-left">名称</th>
-                          <th className="px-4 py-2 text-right">金额</th>
-                          <th className="px-4 py-2 text-right">面积/数量</th>
-                          <th className="px-4 py-2 text-center">折旧年限</th>
-                          <th className="px-4 py-2 text-center w-[90px]">操作</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#dee0e3]">
-                        {splitItems.map(item => (
-                          <tr key={item.id} className="hover:bg-[#f9f9f9]">
-                            <td className="px-4 py-3">{getCategoryLabel(item.category)}</td>
-                            <td className="px-4 py-3 font-medium">{item.name}</td>
-                            <td className="px-4 py-3 text-right">¥{item.amount.toLocaleString()}</td>
-                            <td className="px-4 py-3 text-right">
-                              {item.area ? `${item.area} m²` : item.quantity ? `${item.quantity} 台/套` : '-'}
-                            </td>
-                            <td className="px-4 py-3 text-center">{item.depreciationYears} 年</td>
-                            <td className="px-4 py-3 text-center">
-                              <button
-                                type="button"
-                                onClick={() => setSplitItems(prev => prev.filter(x => x.id !== item.id))}
-                                className="text-xs px-2 py-2 border border-[#dee0e3] rounded hover:bg-gray-50"
-                                title="删除"
-                              >
-                                <Minus size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot className="bg-[#f9fafb] font-medium">
-                        <tr>
-                          <td colSpan={2} className="px-4 py-3">合计</td>
-                          <td className="px-4 py-3 text-right">¥{splitItems.reduce((acc, i) => acc + i.amount, 0).toLocaleString()}</td>
-                          <td colSpan={3}></td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center text-[#8f959e] py-4 bg-[#f9fafb] rounded-lg">暂未拆分</div>
-                )}
-              </div>
-
-              {/* 新增拆分项 */}
-              <div className="border border-[#dee0e3] rounded-lg p-4 mt-4">
-                <h4 className="font-medium text-[#1f2329] mb-4">新增拆分项</h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs text-[#646a73] mb-1">资产类别</label>
-                    <select
-                      value={newSplitItem.category}
-                      onChange={e => setNewSplitItem(prev => ({ ...prev, category: e.target.value as AssetCategory }))}
-                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
-                    >
-                      {Object.values(AssetCategory).map(cat => (
-                        <option key={cat} value={cat}>{getCategoryLabel(cat)}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-xs text-[#646a73] mb-1">资产名称</label>
-                    <input
-                      value={newSplitItem.name || ''}
-                      onChange={e => setNewSplitItem(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
-                      placeholder="例如：主体建筑"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-[#646a73] mb-1">金额 (元)</label>
-                    <input
-                      type="number"
-                      value={newSplitItem.amount || ''}
-                      onChange={e => setNewSplitItem(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
-                      placeholder="0"
-                      min={0}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-[#646a73] mb-1">面积 (m²) / 数量</label>
-                    <input
-                      type="number"
-                      value={newSplitItem.area || newSplitItem.quantity || ''}
-                      onChange={e => {
-                        const val = Number(e.target.value);
-                        if (newSplitItem.category === AssetCategory.Equipment) {
-                          setNewSplitItem(prev => ({ ...prev, quantity: val, area: undefined }));
-                        } else {
-                          setNewSplitItem(prev => ({ ...prev, area: val, quantity: undefined }));
-                        }
-                      }}
-                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
-                      placeholder="0"
-                      min={0}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-[#646a73] mb-1">折旧年限</label>
-                    <input
-                      type="number"
-                      value={newSplitItem.depreciationYears || ''}
-                      onChange={e => setNewSplitItem(prev => ({ ...prev, depreciationYears: Number(e.target.value) }))}
-                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
-                      placeholder="50"
-                      min={0}
-                    />
-                  </div>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={addSplitItemToLocal}
-                    disabled={!newSplitItem.name || !newSplitItem.amount}
-                    className="px-3 py-1.5 bg-[#3370ff] text-white rounded-md text-sm hover:bg-[#285cc9] flex items-center gap-1 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    <Plus size={14} /> 添加拆分项
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* 楼层与房间明细 */}
-            <div>
-              <h4 className="font-medium text-[#1f2329] mb-4 flex items-center gap-2">
-                <Building size={16} /> 楼层与房间明细
-              </h4>
-
-              <div className="border border-[#dee0e3] rounded-lg overflow-hidden">
-                <div className="px-4 py-3 bg-[#fcfcfd] border-b border-[#dee0e3] flex items-center justify-between">
-                  <div className="text-sm text-[#646a73]">
-                    说明：楼层为可选项；当填写“楼层”数量后，可在此处选择 1~楼层数。
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRoomRows(prev => [
-                        ...prev,
-                        {
-                          id: `ROOM-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-                          floor: '',
-                          roomNo: '',
-                          area: '',
-                        },
-                      ]);
-                    }}
-                    className="text-xs px-3 py-2 bg-[#3370ff] text-white rounded flex items-center gap-1 hover:bg-[#285cc9]"
-                  >
-                    <Plus size={14} /> 新增行
-                  </button>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-[#f5f6f7] text-[#646a73] font-medium border-b border-[#dee0e3]">
-                      <tr>
-                        <th className="px-4 py-3 text-left">楼层（可选）</th>
-                        <th className="px-4 py-3 text-left">房间号</th>
-                        <th className="px-4 py-3 text-left">面积</th>
-                        <th className="px-4 py-3 text-center w-[90px]">操作</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#dee0e3]">
-                      {roomRows.length === 0 ? (
-                        <tr>
-                          <td colSpan={4} className="px-4 py-6 text-center text-[#8f959e]">
-                            暂无明细，请点击“新增行”添加。
-                          </td>
-                        </tr>
-                      ) : (
-                        roomRows.map((row) => {
-                          const floorCount = Number((formData as any).floorCount || 0);
-                          const hasFloorOptions = Number.isFinite(floorCount) && floorCount > 0;
-
-                          return (
-                            <tr key={row.id} className="hover:bg-[#f9f9f9]">
-                              <td className="px-4 py-3">
-                                {hasFloorOptions ? (
-                                  <select
-                                    value={row.floor ?? ''}
-                                    onChange={(e) => {
-                                      const v = e.target.value;
-                                      setRoomRows(prev => prev.map(r => r.id === row.id ? { ...r, floor: v } : r));
-                                    }}
-                                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
-                                  >
-                                    <option value="">不填</option>
-                                    {Array.from({ length: floorCount }, (_, i) => i + 1).map(f => (
-                                      <option key={f} value={String(f)}>{f}</option>
-                                    ))}
-                                  </select>
-                                ) : (
-                                  <input
-                                    value={row.floor ?? ''}
-                                    onChange={(e) => {
-                                      const v = e.target.value;
-                                      setRoomRows(prev => prev.map(r => r.id === row.id ? { ...r, floor: v } : r));
-                                    }}
-                                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
-                                    placeholder="可不填"
-                                  />
-                                )}
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  value={row.roomNo ?? ''}
-                                  onChange={(e) => {
-                                    const v = e.target.value;
-                                    setRoomRows(prev => prev.map(r => r.id === row.id ? { ...r, roomNo: v } : r));
-                                  }}
-                                  className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
-                                  placeholder="例如：302"
-                                />
-                              </td>
-                              <td className="px-4 py-3">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  value={row.area ?? ''}
-                                  onChange={(e) => {
-                                    const v = e.target.value;
-                                    setRoomRows(prev => prev.map(r => r.id === row.id ? { ...r, area: v } : r));
-                                  }}
-                                  className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
-                                  placeholder="m²"
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setRoomRows(prev => prev.filter(r => r.id !== row.id));
-                                  }}
-                                  className="text-xs px-2 py-2 border border-[#dee0e3] rounded hover:bg-gray-50"
-                                  title="删除"
-                                >
-                                  <Minus size={14} />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
             {/* 工期信息 */}
             <div>
               <h4 className="font-medium text-[#1f2329] mb-4 flex items-center gap-2">
@@ -1634,6 +1280,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
     { id: 'audit', label: '操作记录', icon: <List size={14} /> },
   ] as const;
 
+
   const getAttachmentTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       approval: '立项批复',
@@ -1709,15 +1356,6 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const currentStageStat = useMemo(() => computeAttachmentCompletion(project.status, project.attachments || []), [project.status, project.attachments]);
   const pendingReviewCount = useMemo(() => (project.attachments || []).filter(a => (a.reviewStatus || 'Pending') === 'Pending').length, [project.attachments]);
 
-  const getStatusLabel = (status: AssetStatus) => {
-    const labels: Record<AssetStatus, string> = {
-      [AssetStatus.Draft]: '基建处起草',
-      [AssetStatus.PendingReview]: '待审核',
-      [AssetStatus.PendingArchive]: '待归档',
-      [AssetStatus.Archive]: '已归档',
-    };
-    return labels[status] || status;
-  };
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -1739,7 +1377,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             </div>
             <div className="mt-2 text-xs text-[#646a73] flex flex-wrap gap-2 items-center">
               <span className="px-2 py-0.5 rounded bg-[#f2f3f5]">
-                当前阶段：{getStatusLabel(project.status)}
+                当前阶段：{getAssetStatusLabel(project.status)}
               </span>
               <span className={`px-2 py-0.5 rounded ${currentStageStat.missingRequired > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                 必备附件：{currentStageStat.requiredApproved}/{currentStageStat.requiredTotal}
@@ -1868,7 +1506,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                   </div>
                 )}
                 <div className="flex gap-2">
-                  {asInfrastructureDept && project.status === AssetStatus.Draft && (
+                  {asInfrastructureDept && !project.isArchived && (
                     <>
                       <select
                         id="infra-upload-type"
@@ -1917,7 +1555,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                     </>
                   )}
 
-                  {userRole === UserRole.AssetAdmin && !asInfrastructureDept && project.status !== AssetStatus.Draft && (
+                  {userRole === UserRole.AssetAdmin && !asInfrastructureDept && (
                     <label className="flex items-center gap-2 text-xs text-[#646a73] select-none">
                       <input
                         type="checkbox"
@@ -1927,7 +1565,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                       演示：以二级学院身份上传
                     </label>
                   )}
-                  {!asInfrastructureDept && userRole === UserRole.AssetAdmin && project.status !== AssetStatus.Draft && (
+                  {!asInfrastructureDept && userRole === UserRole.AssetAdmin && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => {

@@ -8,36 +8,47 @@ export type LegacyAssetStatus =
   | 'AuditReview'
   | 'FinancialReview'
   | 'Active'
-  | 'Disposal';
+  | 'Disposal'
+  | 'Initiation'
+  | 'FinalAccounting'
+  | 'InventoryCheck'
+  | 'TransferIn'
+  | 'Archive'
+  | 'Draft';
 
 export function normalizeAssetStatus(status: any): AssetStatus {
   switch (status) {
+    // 新状态（已是正确值）
+    case AssetStatus.DisposalPending:
+    case AssetStatus.PendingReview:
+    case AssetStatus.PendingArchive:
+    case AssetStatus.Archived:
+      return status;
+
+    // 老状态映射到新四状态
+    case 'Draft':
+      return AssetStatus.DisposalPending;
+
     case 'PreAcceptance':
-      return AssetStatus.FinalAccounting;
     case 'AuditReview':
-      return AssetStatus.FinalAccounting;
     case 'FinancialReview':
-      return AssetStatus.TransferIn;
-    case 'Active':
-      return AssetStatus.Archive;
     case 'Construction':
-      return AssetStatus.Construction;
-    case 'Disposal':
-      return AssetStatus.Disposal;
     case 'Initiation':
-      return AssetStatus.Initiation;
     case 'FinalAccounting':
-      return AssetStatus.FinalAccounting;
     case 'InventoryCheck':
-      return AssetStatus.InventoryCheck;
     case 'TransferIn':
-      return AssetStatus.TransferIn;
+      // 统一视为“待处置”（新建/录入后的初始态）
+      return AssetStatus.DisposalPending;
+
+    case 'Active':
     case 'Archive':
-      return AssetStatus.Archive;
+      // 老数据里 Active/Archive 表示归档结束
+      return AssetStatus.Archived;
+
+    case 'Disposal':
+      return AssetStatus.DisposalPending;
+
     default:
-      return AssetStatus.Initiation;
+      return AssetStatus.DisposalPending;
   }
 }
-
-
-
