@@ -1501,7 +1501,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                       演示：以二级学院身份上传
                     </label>
                   )}
-                  {!asInfrastructureDept && (
+                  {!asInfrastructureDept && userRole === UserRole.AssetAdmin && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -1662,7 +1662,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           <Download size={18} />
                         </button>
 
-                        {asInfrastructureDept && !project.isArchived && (
+                        {asInfrastructureDept && !project.isArchived && status === 'Rejected' && (
                           <>
                             <button
                               type="button"
