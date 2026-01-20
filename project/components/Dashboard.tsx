@@ -243,6 +243,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole, onEnterBigScreen }) => 
                             <Campus3DView
                                 onBuildingSelect={(b: any) => setSelectedBuilding(b)}
                                 selectedBuildingId={selectedBuilding?.id}
+                                mapOverlay={mapOverlay}
                             />
                         </div>
                     )}
