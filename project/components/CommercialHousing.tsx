@@ -11,6 +11,8 @@ import { UserRole } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, LineChart, Line } from 'recharts';
 import CommercialHousingOverview, { CreateFromOverviewPayload } from './CommercialHousingOverview';
 import { ContractUpsertModal, DeleteConfirmationModal } from './ContractModals';
+import { BidListModal } from './BidModals';
+import type { BidItem } from './BidModals';
 
 // ==================== 数据类型定义 ====================
 
@@ -25,16 +27,7 @@ export interface SpaceItem {
   photos?: string[];
 }
 
-interface BidItem {
-  id: string;
-  company: string;
-  contactPerson: string;
-  contactPhone: string;
-  amount: number;
-  depositPaid: boolean;
-  bidDate: string;
-  status: 'Valid' | 'Invalid' | 'Winner' | 'Loser';
-}
+
 
 export interface ContractItem {
   id: string;
@@ -167,7 +160,45 @@ interface DepositRecord {
 // ==================== 初始数据 ====================
 
 const initSpaces: SpaceItem[] = [
-  { id: 'SP-001', name: '一层 101 商铺', area: 120, status: '公开招租', bids: [], monthlyRent: 9600 },
+  {
+    id: 'SP-001',
+    name: '一层 101 商铺',
+    area: 120,
+    status: '公开招租',
+    monthlyRent: 9600,
+    bids: [
+      {
+        id: 'BID-SP-001-001',
+        company: '福州星河餐饮管理有限公司',
+        contactPerson: '张经理',
+        contactPhone: '13800138001',
+        amount: 9800,
+        depositPaid: true,
+        bidDate: '2025-01-12',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-001-002',
+        company: '福建德胜便利商业有限公司',
+        contactPerson: '李总',
+        contactPhone: '13900139002',
+        amount: 10200,
+        depositPaid: true,
+        bidDate: '2025-01-13',
+        status: 'Valid',
+      },
+      {
+        id: 'BID-SP-001-003',
+        company: '福州悦享咖啡有限公司',
+        contactPerson: '王主管',
+        contactPhone: '13700137003',
+        amount: 9500,
+        depositPaid: false,
+        bidDate: '2025-01-14',
+        status: 'Valid',
+      },
+    ],
+  },
   { id: 'SP-002', name: '二层 201 办公室', area: 150, status: '已出租', bids: [], monthlyRent: 12000 },
   { id: 'SP-003', name: '一层 103 商铺', area: 80, status: '已出租', bids: [], monthlyRent: 8000 },
   { id: 'SP-004', name: '三层 301-305 培训中心', area: 500, status: '已出租', bids: [], monthlyRent: 50000 },
@@ -342,6 +373,47 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
   const [selectedRoom, setSelectedRoom] = useState<ApartmentRoom | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [viewingBidsForSpace, setViewingBidsForSpace] = useState<SpaceItem | null>(null);
+
+  const handleConfirmBidWinner = (bid: BidItem) => {
+    if (!viewingBidsForSpace) return;
+
+    // 1) 竞标状态联动：当前中标，其他未中标
+    setSpaces(prev => prev.map(s => {
+      if (s.id !== viewingBidsForSpace.id) return s;
+      return {
+        ...s,
+        bids: (s.bids || []).map(b => ({
+          ...b,
+          status: b.id === bid.id ? 'Winner' : 'Loser',
+        })),
+      };
+    }));
+
+    // 2) 打开签订合同弹窗并预填
+    setEditingContract({
+      id: `CT-${Date.now()}`,
+      contractNo: genContractNo(),
+      spaceId: viewingBidsForSpace.id,
+      spaceName: viewingBidsForSpace.name,
+      area: viewingBidsForSpace.area,
+      tenant: bid.company,
+      tenantContact: `${bid.contactPerson} ${bid.contactPhone}`,
+      tenantLicense: '',
+      rentPerMonth: bid.amount,
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      status: 'Active',
+      signDate: new Date().toISOString().split('T')[0],
+      totalRentReceived: 0,
+      outstandingRent: bid.amount,
+      performanceRating: 5,
+    });
+    setShowContractUpsert(true);
+
+    // 3) 关闭竞标弹窗
+    setViewingBidsForSpace(null);
+  };
 
   // 统计数据
   const commercialStats = useMemo(() => ({
@@ -879,6 +951,13 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
         }}
         contract={deletingContract}
       />
+
+      <BidListModal
+        isOpen={!!viewingBidsForSpace}
+        space={viewingBidsForSpace}
+        onClose={() => setViewingBidsForSpace(null)}
+        onConfirmWinner={handleConfirmBidWinner}
+      />
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -1032,8 +1111,12 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                     </div>
                     {isAssetAdmin && space.status === '公开招租' && (
                       <div className="mt-3 pt-3 border-t border-[#dee0e3] flex gap-2">
-                        <button className="flex-1 text-xs py-1.5 border border-[#dee0e3] rounded hover:bg-gray-50">查看竞标</button>
-                        <button className="flex-1 text-xs py-1.5 bg-green-500 text-white rounded hover:bg-green-600">确定中标</button>
+                        <button
+                          onClick={() => setViewingBidsForSpace(space)}
+                          className="flex-1 text-xs py-1.5 border border-[#dee0e3] rounded hover:bg-gray-50"
+                        >
+                          查看竞标 ({space.bids.length})
+                        </button>
                       </div>
                     )}
                   </div>
