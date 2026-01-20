@@ -750,6 +750,9 @@ const ProjectActions: React.FC<{
   );
 };
 
+// 项目详情内的“编辑”目前未实现（原先误引用外层 setIsProjectFormOpen，导致 TS/JSX 解析混乱）
+const noop = () => {};
+
 // 审计日志标签页组件
 const AuditLogTab: React.FC<{ logs: AuditLog[] }> = ({ logs }) => {
   const formatDate = (dateString: string) => {
@@ -1173,6 +1176,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   onDelete,
   onArchive,
 }) => {
+  const [asInfrastructureDept, setAsInfrastructureDept] = useState(false);
   const [uploadAsCollege, setUploadAsCollege] = useState(false);
   const effectiveUploaderRole = uploadAsCollege ? UserRole.CollegeAdmin : userRole;
   // 获取当前项目的审计日志
@@ -1301,6 +1305,16 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           <div>
             <h3 className="text-lg font-bold text-[#1f2329]">{project.name}</h3>
             <p className="text-sm text-[#646a73] mt-1">{project.id} | {project.contractor}</p>
+            <div className="mt-2 flex flex-wrap gap-3 items-center">
+              <label className="flex items-center gap-2 text-xs text-[#646a73] select-none">
+                <input
+                  type="checkbox"
+                  checked={asInfrastructureDept}
+                  onChange={e => setAsInfrastructureDept(e.target.checked)}
+                />
+                以基建处身份
+              </label>
+            </div>
             <div className="mt-2 text-xs text-[#646a73] flex flex-wrap gap-2 items-center">
               <span className="px-2 py-0.5 rounded bg-[#f2f3f5]">
                 当前阶段：{getStatusLabel(project.status)}
@@ -1308,7 +1322,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               <span className={`px-2 py-0.5 rounded ${currentStageStat.missingRequired > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                 必备附件：{currentStageStat.requiredApproved}/{currentStageStat.requiredTotal}
               </span>
-              {pendingReviewCount > 0 && (
+              {!asInfrastructureDept && pendingReviewCount > 0 && (
                 <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700">
                   待审核：{pendingReviewCount}
                 </span>
@@ -1405,9 +1419,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               {/* 操作按钮 */}
               <ProjectActions
                 project={project}
-                onEdit={() => {
-                setIsProjectFormOpen(true);
-              }}
+                onEdit={noop}
                 onDelete={onDelete}
                 onArchive={onArchive}
                 userRole={userRole}
@@ -1421,14 +1433,65 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           {activeTab === 'form' && (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="text-sm text-[#646a73]">
-                  待审核附件：
-                  <span className="font-medium text-red-600">{
-                    (project.attachments || []).filter(a => (a.reviewStatus || 'Pending') === 'Pending').length
-                  }</span>
-                </div>
+                {!asInfrastructureDept && (
+                  <div className="text-sm text-[#646a73]">
+                    待审核附件：
+                    <span className="font-medium text-red-600">{
+                      (project.attachments || []).filter(a => (a.reviewStatus || 'Pending') === 'Pending').length
+                    }</span>
+                  </div>
+                )}
                 <div className="flex gap-2">
-                  {userRole === UserRole.AssetAdmin && (
+                  {asInfrastructureDept && !project.isArchived && (
+                    <>
+                      <select
+                        id="infra-upload-type"
+                        className="border border-[#dee0e3] rounded-md px-2 py-1 text-xs focus:border-[#3370ff] outline-none"
+                        defaultValue={currentStageReq.requiredAttachments[0]?.type || 'other'}
+                      >
+                        {currentStageReq.requiredAttachments.map(req => (
+                          <option key={req.type} value={req.type}>{req.label}</option>
+                        ))}
+                        <option value="other">其他</option>
+                      </select>
+                      <input
+                        id="infra-upload-name"
+                        className="border border-[#dee0e3] rounded-md px-2 py-1 text-xs focus:border-[#3370ff] outline-none"
+                        placeholder="附件名称"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const typeEl = document.getElementById('infra-upload-type') as HTMLSelectElement | null;
+                          const nameEl = document.getElementById('infra-upload-name') as HTMLInputElement | null;
+                          const type = (typeEl?.value || 'other') as any;
+                          const name = (nameEl?.value || '').trim();
+                          if (!name) {
+                            alert('请输入附件名称');
+                            return;
+                          }
+                          const newAtt = {
+                            id: `ATT-${Date.now()}`,
+                            name,
+                            type,
+                            uploadDate: new Date().toISOString().split('T')[0],
+                            uploadedByDept: '基建处',
+                            reviewStatus: 'Pending' as const,
+                          };
+                          onUpdate({
+                            ...project,
+                            attachments: [...(project.attachments || []), newAtt],
+                          });
+                          if (nameEl) nameEl.value = '';
+                        }}
+                        className="text-xs px-3 py-2 bg-[#3370ff] text-white rounded flex items-center gap-1 hover:bg-[#285cc9]"
+                      >
+                        <Plus size={14} /> 上传（模拟）
+                      </button>
+                    </>
+                  )}
+
+                  {userRole === UserRole.AssetAdmin && !asInfrastructureDept && (
                     <label className="flex items-center gap-2 text-xs text-[#646a73] select-none">
                       <input
                         type="checkbox"
@@ -1438,49 +1501,59 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                       演示：以二级学院身份上传
                     </label>
                   )}
-                  <button
-                    onClick={() => {
-                      const next = {
-                        ...project,
-                        attachments: (project.attachments || []).map(a => a.reviewStatus ? a : { ...a, reviewStatus: 'Pending' as const }),
-                      };
-                      onUpdate(next);
-                    }}
-                    disabled={isReadOnly}
-                    className="text-xs px-3 py-2 border border-[#dee0e3] rounded flex items-center gap-1 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    <RefreshCw size={14} /> 初始化待审核
-                  </button>
-                  <button
-                    onClick={() => {
-                      const pending = (project.attachments || []).filter(a => (a.reviewStatus || 'Pending') === 'Pending');
-                      if (pending.length === 0) {
-                        alert('暂无待审核附件');
-                        return;
-                      }
-                      const ids = pending.map(p => p.id);
-                      const updated = {
-                        ...project,
-                        attachments: (project.attachments || []).map(a => ids.includes(a.id) ? {
-                          ...a,
-                          reviewStatus: 'Approved' as const,
-                          reviewedBy: '资产管理员',
-                          reviewedAt: new Date().toISOString(),
-                          reviewNote: a.reviewNote || '批量通过',
-                        } : a),
-                      };
-                      onUpdate(updated);
-                    }}
-                    disabled={userRole !== UserRole.AssetAdmin || project.isArchived}
-                    className="text-xs px-3 py-2 bg-green-500 text-white rounded flex items-center gap-1 hover:bg-green-600 disabled:opacity-50"
-                  >
-                    <Check size={14} /> 批量通过
-                  </button>
+                  {!asInfrastructureDept && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const next = {
+                            ...project,
+                            attachments: (project.attachments || []).map(a => a.reviewStatus ? a : { ...a, reviewStatus: 'Pending' as const }),
+                          };
+                          onUpdate(next);
+                        }}
+                        disabled={isReadOnly}
+                        className="text-xs px-3 py-2 border border-[#dee0e3] rounded flex items-center gap-1 hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        <RefreshCw size={14} /> 初始化待审核
+                      </button>
+                      <button
+                        onClick={() => {
+                          const pending = (project.attachments || []).filter(
+                            a => (a.reviewStatus || 'Pending') === 'Pending'
+                          );
+                          if (pending.length === 0) {
+                            alert('暂无待审核附件');
+                            return;
+                          }
+                          const ids = pending.map(p => p.id);
+                          const updated = {
+                            ...project,
+                            attachments: (project.attachments || []).map(a =>
+                              ids.includes(a.id)
+                                ? {
+                                    ...a,
+                                    reviewStatus: 'Approved' as const,
+                                    reviewedBy: '资产管理员',
+                                    reviewedAt: new Date().toISOString(),
+                                    reviewNote: a.reviewNote || '批量通过',
+                                  }
+                                : a
+                            ),
+                          };
+                          onUpdate(updated);
+                        }}
+                        disabled={userRole !== UserRole.AssetAdmin || project.isArchived}
+                        className="text-xs px-3 py-2 bg-green-500 text-white rounded flex items-center gap-1 hover:bg-green-600 disabled:opacity-50"
+                      >
+                        <Check size={14} /> 批量通过
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* 上传附件（仅二级学院可用；资产管理员可勾选“演示：以二级学院身份上传”） */}
-              {(effectiveUploaderRole === UserRole.CollegeAdmin) && !project.isArchived && (
+              {!asInfrastructureDept && (effectiveUploaderRole === UserRole.CollegeAdmin) && !project.isArchived && (
                 <div className="border border-[#dee0e3] rounded-lg p-4 bg-white">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="text-sm font-medium text-[#1f2329]">上传附件</div>
@@ -1589,7 +1662,47 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           <Download size={18} />
                         </button>
 
-                        {userRole === UserRole.AssetAdmin && !project.isArchived && (
+                        {asInfrastructureDept && !project.isArchived && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextName = prompt('请输入新的附件名称', att.name);
+                                if (nextName === null) return;
+                                const name = nextName.trim();
+                                if (!name) {
+                                  alert('附件名称不能为空');
+                                  return;
+                                }
+                                const nextType = prompt('请输入新的附件类型（例如：contract / acceptance / audit / other）', att.type);
+                                if (nextType === null) return;
+                                const type = nextType.trim() || att.type;
+                                onUpdate({
+                                  ...project,
+                                  attachments: (project.attachments || []).map(a => a.id === att.id ? { ...a, name, type } : a),
+                                });
+                              }}
+                              className="text-xs px-3 py-1.5 border border-[#dee0e3] text-[#1f2329] rounded hover:bg-gray-50 flex items-center gap-1"
+                            >
+                              <Edit size={14} /> 编辑
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!confirm('确定要删除该附件吗？')) return;
+                                onUpdate({
+                                  ...project,
+                                  attachments: (project.attachments || []).filter(a => a.id !== att.id),
+                                });
+                              }}
+                              className="text-xs px-3 py-1.5 border border-red-500 text-red-600 rounded hover:bg-red-50 flex items-center gap-1"
+                            >
+                              <Trash2 size={14} /> 删除
+                            </button>
+                          </>
+                        )}
+
+                        {!asInfrastructureDept && userRole === UserRole.AssetAdmin && !project.isArchived && (
                           <>
                             <button
                               onClick={() => {
