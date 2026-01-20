@@ -80,8 +80,9 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
   const [projects, setProjects] = useLocalStorage<Project[]>('uniassets-projects-v2', MOCK_PROJECTS);
   const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('uniassets-audit-logs', []);
     const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [detailTab, setDetailTab] = useState<'form' | 'milestone' | 'split' | 'gaojibiao' | 'rooms' | 'audit'>('form');
+  const [detailTab, setDetailTab] = useState<'form' | 'split' | 'gaojibiao' | 'rooms' | 'audit'>('form');
   const [confirmAction, setConfirmAction] = useState<{ project: Project; action: string } | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -271,11 +272,23 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
       {/* 新建/编辑项目模态框 */}
       {isProjectFormOpen && (
         <NewProjectModal
-          onClose={() => setIsProjectFormOpen(false)}
+          mode={editingProject ? 'edit' : 'create'}
+          initialProject={editingProject}
+          onClose={() => {
+            setIsProjectFormOpen(false);
+            setEditingProject(null);
+          }}
           onAddProject={(newProject) => {
             setProjects(prev => [newProject, ...prev]);
             logAudit('create', 'project', newProject.id, newProject.name);
             setIsProjectFormOpen(false);
+            setEditingProject(null);
+          }}
+          onUpdateProject={(updatedProject) => {
+            setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+            setSelectedProject(prev => (prev?.id === updatedProject.id ? updatedProject : prev));
+            setIsProjectFormOpen(false);
+            setEditingProject(null);
           }}
           existingProjectCount={projects.length}
         />
@@ -288,6 +301,10 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
           activeTab={detailTab}
           onTabChange={setDetailTab}
           onClose={() => setSelectedProject(null)}
+          onEditProject={(p) => {
+            setEditingProject(p);
+            setIsProjectFormOpen(true);
+          }}
           onUpdate={(updated) => {
             // 记录更新日志
             const changedFields = Object.entries(updated).reduce((acc, [key, value]) => {
@@ -487,8 +504,8 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
                         setDetailTab('form');
                       }}
                       onEdit={() => {
-                        setSelectedProject(project);
-                        setDetailTab('form');
+                        setEditingProject(project);
+                        setIsProjectFormOpen(true);
                       }}
                       onDelete={() => handleDeleteProject(project)}
                       onArchive={() => handleArchiveProject(project)}
@@ -717,10 +734,14 @@ const ProjectActions: React.FC<{
   onDelete: () => void;
   onArchive: () => void;
   userRole: UserRole;
-}> = ({ project, onEdit, onDelete, onArchive, userRole }) => {
+  asInfrastructureDept: boolean;
+}> = ({ project, onEdit, onDelete, onArchive, userRole, asInfrastructureDept }) => {
+  const canEditDeleteForm = asInfrastructureDept && !project.isArchived;
+  const canArchive = userRole === UserRole.AssetAdmin && project.status === AssetStatus.Archive && !project.isArchived;
+
   return (
     <div className="flex flex-wrap gap-2 mt-4 border-t border-gray-200 pt-4">
-      {userRole === UserRole.AssetAdmin && (
+      {canEditDeleteForm && (
         <>
           <button
             onClick={onEdit}
@@ -736,22 +757,23 @@ const ProjectActions: React.FC<{
           >
             <Trash2 size={14} /> 删除
           </button>
-          {project.status === AssetStatus.Archive && !project.isArchived && (
-            <button
-              onClick={onArchive}
-              className="px-3 py-1.5 bg-purple-50 text-purple-600 rounded-md text-sm hover:bg-purple-100 flex items-center gap-1"
-            >
-              <Archive size={14} /> 归档
-            </button>
-          )}
         </>
+      )}
+
+      {canArchive && (
+        <button
+          onClick={onArchive}
+          className="px-3 py-1.5 bg-purple-50 text-purple-600 rounded-md text-sm hover:bg-purple-100 flex items-center gap-1"
+        >
+          <Archive size={14} /> 归档
+        </button>
       )}
     </div>
   );
 };
 
 // 项目详情内的“编辑”目前未实现（原先误引用外层 setIsProjectFormOpen，导致 TS/JSX 解析混乱）
-const noop = () => {};
+// removed noop: edit is now wired to open the project edit modal from the parent component
 
 // 审计日志标签页组件
 const AuditLogTab: React.FC<{ logs: AuditLog[] }> = ({ logs }) => {
@@ -832,31 +854,85 @@ const getFieldLabel = (field: string) => {
 
 /* ========== 新建项目模态框 ========== */
 interface NewProjectModalProps {
+  mode?: 'create' | 'edit';
+  initialProject?: Project | null;
   onClose: () => void;
   onAddProject: (project: Project) => void;
+  onUpdateProject?: (project: Project) => void;
   existingProjectCount: number;
 }
 
-const NewProjectModal: React.FC<NewProjectModalProps> = ({ onClose, onAddProject, existingProjectCount }) => {
-  const [newAttachments, setNewAttachments] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
-    name: '',
-    contractor: '',
-    contractAmount: '',
-    fundSource: FundSource.Fiscal,
-    location: '',
-    plannedArea: '',
-    plannedStartDate: '',
-    plannedEndDate: '',
-    projectManager: '',
-    supervisor: '',
-    floorCount: '',
-    roomCount: '',
+const NewProjectModal: React.FC<NewProjectModalProps> = ({
+  mode = 'create',
+  initialProject,
+  onClose,
+  onAddProject,
+  onUpdateProject,
+  existingProjectCount,
+}) => {
+  const [newAttachments, setNewAttachments] = useState<any[]>(initialProject?.attachments || []);
+
+  const [formData, setFormData] = useState(() => {
+    if (mode === 'edit' && initialProject) {
+      return {
+        name: initialProject.name,
+        contractor: initialProject.contractor,
+        contractAmount: String(initialProject.contractAmount),
+        fundSource: initialProject.fundSource,
+        location: initialProject.location || '',
+        plannedArea: String(initialProject.plannedArea || ''),
+        plannedStartDate: initialProject.plannedStartDate || '',
+        plannedEndDate: initialProject.plannedEndDate || '',
+        projectManager: initialProject.projectManager || '',
+        supervisor: initialProject.supervisor || '',
+        floorCount: String(initialProject.floorCount || ''),
+        roomCount: String(initialProject.roomCount || ''),
+      };
+    }
+
+    return {
+      name: '',
+      contractor: '',
+      contractAmount: '',
+      fundSource: FundSource.Fiscal,
+      location: '',
+      plannedArea: '',
+      plannedStartDate: '',
+      plannedEndDate: '',
+      projectManager: '',
+      supervisor: '',
+      floorCount: '',
+      roomCount: '',
+    };
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.contractAmount) return;
+
+    if (mode === 'edit' && initialProject) {
+      const updatedProject: Project = {
+        ...initialProject,
+        name: formData.name,
+        contractor: formData.contractor || '未指定',
+        contractAmount: Number(formData.contractAmount),
+        fundSource: formData.fundSource,
+        location: formData.location,
+        plannedArea: formData.plannedArea ? Number(formData.plannedArea) : undefined,
+        floorCount: formData.floorCount ? Number(formData.floorCount) : undefined,
+        roomCount: formData.roomCount ? Number(formData.roomCount) : undefined,
+        plannedStartDate: formData.plannedStartDate,
+        plannedEndDate: formData.plannedEndDate,
+        projectManager: formData.projectManager,
+        supervisor: formData.supervisor,
+        completionDate: formData.plannedEndDate || initialProject.completionDate,
+        attachments: newAttachments,
+      };
+
+      onUpdateProject?.(updatedProject);
+      onClose();
+      return;
+    }
 
     const newProject: Project = {
       id: `PRJ-${new Date().getFullYear()}-${String(existingProjectCount + 1).padStart(3, '0')}`,
@@ -899,7 +975,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({ onClose, onAddProject
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="p-6 border-b border-[#dee0e3] flex justify-between items-center flex-shrink-0">
-          <h3 className="text-lg font-bold text-[#1f2329]">录入新基建工程</h3>
+          <h3 className="text-lg font-bold text-[#1f2329]">{mode === 'edit' ? '编辑工程项目' : '录入新基建工程'}</h3>
           <button onClick={onClose} className="text-[#646a73] hover:text-[#1f2329]"><X size={20} /></button>
         </div>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
@@ -1159,6 +1235,7 @@ interface ProjectDetailModalProps {
   onTabChange: (tab: 'form' | 'split' | 'gaojibiao' | 'rooms' | 'audit') => void;
   onClose: () => void;
   onUpdate: (project: Project) => void;
+  onEditProject: (project: Project) => void;
   userRole: UserRole;
   auditLogs: AuditLog[];
   onDelete: () => void;
@@ -1171,6 +1248,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   onTabChange,
   onClose,
   onUpdate,
+  onEditProject,
   userRole,
   auditLogs,
   onDelete,
@@ -1419,10 +1497,14 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               {/* 操作按钮 */}
               <ProjectActions
                 project={project}
-                onEdit={noop}
+                onEdit={() => {
+                  if (project.isArchived) return;
+                  onEditProject(project);
+                }}
                 onDelete={onDelete}
                 onArchive={onArchive}
                 userRole={userRole}
+                asInfrastructureDept={asInfrastructureDept}
               />
             </div>
           )}
@@ -1676,10 +1758,13 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                                 }
                                 const nextType = prompt('请输入新的附件类型（例如：contract / acceptance / audit / other）', att.type);
                                 if (nextType === null) return;
-                                const type = nextType.trim() || att.type;
+                                const next = (nextType.trim() || att.type) as any;
+                                const type = (['approval','bidding','contract','change','drawing','acceptance','audit','other'].includes(next)
+                                  ? next
+                                  : att.type) as any;
                                 onUpdate({
                                   ...project,
-                                  attachments: (project.attachments || []).map(a => a.id === att.id ? { ...a, name, type } : a),
+                                  attachments: (project.attachments || []).map(a => a.id === att.id ? { ...a, name, type, reviewStatus: 'Pending' as const } : a),
                                 });
                               }}
                               className="text-xs px-3 py-1.5 border border-[#dee0e3] text-[#1f2329] rounded hover:bg-gray-50 flex items-center gap-1"
@@ -1720,7 +1805,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                               }}
                               className="text-xs px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-1"
                             >
-                              <Check size={14} /> 通过
+                              <Check size={14} /> 审核通过
                             </button>
                             <button
                               onClick={() => {
@@ -1740,7 +1825,50 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                               }}
                               className="text-xs px-3 py-1.5 border border-red-500 text-red-600 rounded hover:bg-red-50 flex items-center gap-1"
                             >
-                              <XCircle size={14} /> 驳回
+                              <XCircle size={14} /> 审核驳回
+                            </button>
+                          </>
+                        )}
+
+                        {asInfrastructureDept && !project.isArchived && status === 'Rejected' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextName = prompt('请输入新的附件名称', att.name);
+                                if (nextName === null) return;
+                                const name = nextName.trim();
+                                if (!name) {
+                                  alert('附件名称不能为空');
+                                  return;
+                                }
+                                const nextType = prompt('请输入新的附件类型（例如：contract / acceptance / audit / other）', att.type);
+                                if (nextType === null) return;
+                                const next = (nextType.trim() || att.type) as any;
+                                const type = (['approval','bidding','contract','change','drawing','acceptance','audit','other'].includes(next)
+                                  ? next
+                                  : att.type) as any;
+                                onUpdate({
+                                  ...project,
+                                  attachments: (project.attachments || []).map(a => a.id === att.id ? { ...a, name, type, reviewStatus: 'Pending' as const } : a),
+                                });
+                              }}
+                              className="text-xs px-3 py-1.5 border border-[#dee0e3] text-[#1f2329] rounded hover:bg-gray-50 flex items-center gap-1"
+                            >
+                              <RefreshCw size={14} /> 重新上传
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!confirm('确定要删除该附件吗？')) return;
+                                onUpdate({
+                                  ...project,
+                                  attachments: (project.attachments || []).filter(a => a.id !== att.id),
+                                });
+                              }}
+                              className="text-xs px-3 py-1.5 border border-red-500 text-red-600 rounded hover:bg-red-50 flex items-center gap-1"
+                            >
+                              <Trash2 size={14} /> 删除
                             </button>
                           </>
                         )}
