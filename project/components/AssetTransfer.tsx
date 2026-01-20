@@ -233,7 +233,7 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
   const confirmArchiveProject = () => {
     if (!confirmDialog.project) return;
 
-    // 归档前强校验：必须完成“房间功能划分”确认（工程类）
+    // 归档前强校验：必须完成“房间管理”确认（工程类）
     if (!confirmDialog.project.roomFunctionPlanConfirmed) {
       alert('归档前请先完成并确认“房间功能划分”。');
       setConfirmDialog(prev => ({ ...prev, isOpen: false }));
@@ -305,6 +305,21 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
             setIsProjectFormOpen(true);
           }}
           onUpdate={(updated) => {
+            // Check for automatic status advancement
+            let finalProject = { ...updated };
+            if (finalProject.status === AssetStatus.PendingReview) {
+              const completionStats = computeAttachmentCompletion(finalProject.status, finalProject.attachments || []);
+              if (completionStats.requiredTotal > 0 && completionStats.requiredApproved === completionStats.requiredTotal) {
+                finalProject.status = AssetStatus.PendingArchive;
+                logAudit('status_change', 'project', finalProject.id, finalProject.name, {
+                  status: {
+                    old: AssetStatus.PendingReview,
+                    new: AssetStatus.PendingArchive,
+                  },
+                });
+              }
+            }
+
             // 记录更新日志
             const changedFields = Object.entries(updated).reduce((acc, [key, value]) => {
               if (JSON.stringify(selectedProject![key as keyof Project]) !== JSON.stringify(value)) {

@@ -85,7 +85,7 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-sm text-[#646a73]">归档前必须完成建筑-房间功能划分（按主类/亚类）。</div>
+          <div className="text-sm text-[#646a73]">归档前必须完成建筑-房间管理（按主类/亚类）。</div>
           {confirmed ? (
             <div className="text-xs text-green-700 mt-1 flex items-center gap-1">
               <CheckCircle size={14} /> 已确认 {confirmedAt ? `(${new Date(confirmedAt).toLocaleString()})` : ''}{' '}
