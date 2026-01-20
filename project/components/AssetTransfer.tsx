@@ -515,6 +515,32 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
                         setSelectedProject(project);
                         setDetailTab('form');
                       }}
+                      onEnterArchiveFlow={() => {
+                        const stat = computeAttachmentCompletion(AssetStatus.PendingReview, project.attachments || []);
+                        const readyToEnterArchiveFlow = stat.requiredTotal > 0 && stat.requiredApproved === stat.requiredTotal;
+                        if (!readyToEnterArchiveFlow) {
+                          alert('必要附件未全部审核通过，无法进入归档流程。');
+                          return;
+                        }
+
+                        logAudit('status_change', 'project', project.id, project.name, {
+                          status: {
+                            old: AssetStatus.PendingReview,
+                            new: AssetStatus.PendingArchive,
+                          },
+                        });
+
+                        setProjects(prev =>
+                          prev.map(p =>
+                            p.id === project.id
+                              ? {
+                                  ...p,
+                                  status: AssetStatus.PendingArchive,
+                                }
+                              : p
+                          )
+                        );
+                      }}
                       onArchive={() => handleArchiveProject(project)}
                       userRole={userRole}
                       onProcess={() => handleProcess(project)}
@@ -649,11 +675,12 @@ const ProjectActionsCell: React.FC<{
   project: Project;
   onView: () => void;
   onArchive: () => void;
+  onEnterArchiveFlow: () => void;
   userRole: UserRole;
   onProcess: () => void;
   nextAction: { text: string; nextStatus: AssetStatus } | null;
   canProceed: boolean;
-}> = ({ project, onView, onArchive, userRole, onProcess, nextAction, canProceed }) => {
+}> = ({ project, onView, onArchive, onEnterArchiveFlow, userRole, onProcess, nextAction, canProceed }) => {
   return (
     <div className="flex items-center gap-2">
       {/* 查看按钮 */}
@@ -664,6 +691,22 @@ const ProjectActionsCell: React.FC<{
       >
         <Eye size={16} />
       </button>
+
+      {/* 进入归档流程：仅“待审核”且必要附件全部审核通过 */}
+      {userRole === UserRole.AssetAdmin && !project.isArchived && project.status === AssetStatus.PendingReview && (() => {
+        const stat = computeAttachmentCompletion(AssetStatus.PendingReview, project.attachments || []);
+        const readyToEnterArchiveFlow = stat.requiredTotal > 0 && stat.requiredApproved === stat.requiredTotal;
+        if (!readyToEnterArchiveFlow) return null;
+        return (
+          <button
+            onClick={onEnterArchiveFlow}
+            className="text-xs border border-purple-600 text-purple-600 px-2 py-1 rounded hover:bg-purple-50 flex items-center gap-1"
+            title="进入归档流程"
+          >
+            进入归档流程 <ArrowRight size={12} />
+          </button>
+        );
+      })()}
 
       {/* 归档按钮：仅“待归档”状态下，资产处可归档 */}
       {userRole === UserRole.AssetAdmin && !project.isArchived && project.status === AssetStatus.PendingArchive && (
