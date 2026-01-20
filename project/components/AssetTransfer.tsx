@@ -2060,7 +2060,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           <Download size={18} />
                         </button>
 
-                        {asInfrastructureDept && !isReadOnly && [AssetStatus.DisposalPending, AssetStatus.PendingReview].includes(project.status) && status === 'Rejected' && (
+                        {asInfrastructureDept && !isReadOnly && [AssetStatus.DisposalPending, AssetStatus.PendingReview].includes(project.status) && ['Pending', 'Rejected'].includes(status) && (
                           <>
                             <button
                               type="button"
