@@ -188,7 +188,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole, onEnterBigScreen }) => 
                             onClick={() => setMapView('campus')}
                             className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${mapView === 'campus' ? 'bg-[#3370ff] text-white' : 'text-white/70 hover:text-white'}`}
                          >
-                             2.5D 校区视图
+                             3D 校区视图
                          </button>
                          <button 
                             onClick={() => setMapView('building')}
