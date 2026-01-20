@@ -13,13 +13,13 @@ import ReactMarkdown from 'react-markdown';
 import {
   UserRole, FeeStatus, RoomUseType,
   FeeStandard, FeeTierRule, FeeBill, PaymentRecord, ReminderRecord,
-  VerificationRecord, DisputeRecord, ExtendedDepartmentFee
+  VerificationRecord, ExtendedDepartmentFee
 } from '../types';
 import PersonFeeManagement from './PersonFeeManagement';
 import {
   MOCK_FEE_STANDARDS, MOCK_FEE_TIER_RULES, MOCK_FEE_BILLS,
   MOCK_PAYMENT_RECORDS, MOCK_REMINDER_RECORDS, MOCK_VERIFICATION_RECORDS,
-  MOCK_DISPUTE_RECORDS, MOCK_EXTENDED_FEES
+  MOCK_EXTENDED_FEES
 } from '../constants';
 import { MOCK_PERSON_USAGES } from '../constants/personFeeData';
 import { getPersonQuotaArea } from '../utils/personQuota';
@@ -47,7 +47,7 @@ function useLocalStorage<T>(key: string, initialValue: T) {
   return [storedValue, setValue] as const;
 }
 
-type TabType = 'overview' | 'persons' | 'bills' | 'payments' | 'reminders' | 'disputes' | 'settings';
+type TabType = 'overview' | 'persons' | 'bills' | 'payments' | 'reminders' | 'settings';
 
 const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
   // 数据状态
@@ -55,7 +55,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
   const [bills, setBills] = useLocalStorage<FeeBill[]>('fee-bills', MOCK_FEE_BILLS);
   const [payments, setPayments] = useLocalStorage<PaymentRecord[]>('payment-records', MOCK_PAYMENT_RECORDS);
   const [reminders, setReminders] = useLocalStorage<ReminderRecord[]>('reminder-records', MOCK_REMINDER_RECORDS);
-  const [disputes, setDisputes] = useLocalStorage<DisputeRecord[]>('dispute-records', MOCK_DISPUTE_RECORDS);
   const [standards, setStandards] = useLocalStorage<FeeStandard[]>('fee-standards', MOCK_FEE_STANDARDS);
   const [tierRules, setTierRules] = useLocalStorage<FeeTierRule[]>('tier-rules', MOCK_FEE_TIER_RULES);
   const [verifications] = useState<VerificationRecord[]>(MOCK_VERIFICATION_RECORDS);
@@ -78,7 +77,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
   const [isStandardModalOpen, setIsStandardModalOpen] = useState(false);
   const [isGenerateBillModalOpen, setIsGenerateBillModalOpen] = useState(false);
 
@@ -100,7 +98,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
       pendingAmount: currentYearFees.reduce((acc, f) => acc + f.remainingAmount, 0),
       completedCount: currentYearFees.filter(f => f.status === FeeStatus.Completed).length,
       pendingCount: currentYearFees.filter(f => [FeeStatus.BillGenerated, FeeStatus.PendingConfirm].includes(f.status)).length,
-      disputeCount: currentYearFees.filter(f => f.status === FeeStatus.Disputed).length,
       blacklistCount: currentYearFees.filter(f => f.isBlacklisted).length,
       overQuotaCount: currentYearFees.filter(f => f.excessArea > 0).length,
     };
@@ -489,7 +486,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
     { id: 'bills', label: '账单管理', icon: <Receipt size={16} />, badge: stats.pendingCount },
     { id: 'payments', label: '缴费记录', icon: <CreditCard size={16} /> },
     { id: 'reminders', label: '催缴管理', icon: <Bell size={16} />, adminOnly: true },
-    { id: 'disputes', label: '争议处理', icon: <Scale size={16} />, badge: stats.disputeCount },
     { id: 'settings', label: '收费设置', icon: <Settings size={16} />, adminOnly: true },
   ];
 
@@ -1479,74 +1475,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
         </div>
       )}
 
-      {/* 提出异议模态框 */}
-      {isDisputeModalOpen && selectedFee && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-lg mx-4">
-            <div className="p-4 border-b border-[#dee0e3] flex justify-between items-center">
-              <h3 className="font-medium text-lg">提出账单异议</h3>
-              <button onClick={() => { setIsDisputeModalOpen(false); setSelectedFee(null); }} className="text-[#8f959e] hover:text-[#1f2329]">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-4 space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-                <p className="text-sm text-blue-700">
-                  <span className="font-medium">{selectedFee.departmentName}</span> - {selectedFee.year}年度账单
-                </p>
-                <p className="text-xs text-blue-600 mt-1">
-                  应缴金额: ¥{selectedFee.totalCost.toLocaleString()}
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1f2329] mb-1">异议类型 *</label>
-                <select
-                  id="disputeType"
-                  className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
-                >
-                  <option value="AreaDispute">面积数据有误</option>
-                  <option value="PriceDispute">收费标准有误</option>
-                  <option value="QuotaDispute">定额核算有误</option>
-                  <option value="Other">其他问题</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1f2329] mb-1">异议说明 *</label>
-                <textarea
-                  id="disputeDescription"
-                  className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm h-24"
-                  placeholder="请详细说明异议内容，并提供相关依据..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1f2329] mb-1">附件证明</label>
-                <div className="border-2 border-dashed border-[#dee0e3] rounded-md p-4 text-center">
-                  <Upload size={24} className="mx-auto text-[#8f959e] mb-2" />
-                  <p className="text-sm text-[#646a73]">点击上传或拖拽文件到此处</p>
-                  <p className="text-xs text-[#8f959e] mt-1">支持 PDF、图片等格式，最大10MB</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-4 border-t border-[#dee0e3] flex justify-end gap-3">
-              <button onClick={() => { setIsDisputeModalOpen(false); setSelectedFee(null); }} className="px-4 py-2 border border-[#dee0e3] rounded-md text-sm hover:bg-gray-50">
-                取消
-              </button>
-              <button
-                onClick={() => {
-                  const description = (document.getElementById('disputeDescription') as HTMLTextAreaElement)?.value;
-                  const disputeType = (document.getElementById('disputeType') as HTMLSelectElement)?.value as DisputeRecord['disputeType'];
-                  if (description) {
-                    handleSubmitDispute(selectedFee, description, disputeType);
-                  }
-                }}
-                className="px-4 py-2 bg-[#3370ff] text-white rounded-md text-sm hover:bg-[#285cc9]"
-              >
-                提交异议
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 新增收费标准模态框 */}
       {isStandardModalOpen && (

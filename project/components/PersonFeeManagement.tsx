@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Search, Eye, Bell, Edit2, Plus, Trash2, ArrowUpDown, X } from 'lucide-react';
+import { Search, Eye, Bell, Plus, ArrowUpDown, X } from 'lucide-react';
 import { FeeStatus, PaymentRecord, ReminderRecord } from '../types';
 import { getPersonQuotaArea } from '../utils/personQuota';
 import { MOCK_PERSON_USAGES } from '../constants/personFeeData';
@@ -311,12 +311,7 @@ const PersonFeeManagement: React.FC<PersonFeeManagementProps> = ({
                     {isAssetAdmin && r.remainingAmount > 0 && (
                       <button onClick={() => handleSendReminder(r)} className="text-amber-600 hover:text-amber-700" title="催缴"><Bell size={16} /></button>
                     )}
-                    {isAssetAdmin && (
-                      <button onClick={() => openEdit(r)} className="text-[#8f959e] hover:text-[#1f2329]" title="编辑"><Edit2 size={16} /></button>
-                    )}
-                    {isAssetAdmin && (
-                      <button onClick={() => handleDelete(r)} className="text-red-600 hover:text-red-700" title="删除"><Trash2 size={16} /></button>
-                    )}
+
                   </div>
                 </td>
               </tr>
