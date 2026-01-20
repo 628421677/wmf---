@@ -498,11 +498,9 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
                       onApproveToArchive={() => handleApproveToArchive(project)}
                       userRole={userRole}
                       canProceed={(() => {
-                        const stat = computeAttachmentCompletion(project.status, project.attachments || []);
-                        const hasThisStageFile = stat.missingRequired === 0;
-                        const auditDone = (project.attachments || []).some(a => a.type === 'audit' && (a.reviewStatus || 'Pending') === 'Approved');
-                        const requireAudit = [AssetStatus.PendingReview, AssetStatus.PendingArchive, AssetStatus.Archive].includes(project.status);
-                        return hasThisStageFile && (!requireAudit || auditDone);
+                        if (project.status !== AssetStatus.PendingReview) return false;
+                        const stat = computeAttachmentCompletion(AssetStatus.PendingReview, project.attachments || []);
+                        return stat.missingRequired === 0 && stat.requiredApproved === stat.requiredTotal;
                       })()}
                     />
                   </td>
