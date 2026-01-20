@@ -3,11 +3,13 @@
 export enum UserRole {
   Teacher = 'Teacher',             // 教师
   CollegeAdmin = 'CollegeAdmin',   // 二级学院管理员
+  InfrastructureDept = 'InfrastructureDept', // 基建处
   AssetAdmin = 'AssetAdmin',       // 资产处管理员
   Guest = 'Guest'                  // 游客
 }
 
 export enum AssetStatus {
+  Draft = 'Draft',                 // 基建处起草
   Initiation = 'Initiation',       // 立项阶段
   Construction = 'Construction',   // 建设实施阶段
   FinalAccounting = 'FinalAccounting', // 竣工决算阶段
@@ -345,6 +347,9 @@ export interface ProjectRoomDetail {
 export interface Project {
   id: string;
   name: string;
+  transferApplicationSubmitted?: boolean; // 是否已发起转固申请（基建处->资产处）
+  transferApplicationSubmittedAt?: string;
+  transferApplicationSubmittedBy?: string;
   contractAmount: number;
   finalAmount?: number;       // 决算金额
   auditAmount?: number;       // 审计金额

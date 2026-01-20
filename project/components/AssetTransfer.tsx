@@ -78,6 +78,8 @@ function useLocalStorage<T>(key: string, initialValue: T) {
 }
 
 const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
+  const isInfrastructureDept = userRole === UserRole.InfrastructureDept;
+  const isAssetAdmin = userRole === UserRole.AssetAdmin;
   const [projects, setProjects] = useLocalStorage<Project[]>('uniassets-projects-v2', MOCK_PROJECTS);
   const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('uniassets-audit-logs', []);
     const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
@@ -143,6 +145,8 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
 
 
   const getNextAction = (status: AssetStatus): { text: string; nextStatus: AssetStatus } | null => {
+    if (status === AssetStatus.Draft) return null;
+
     const actions: Partial<Record<AssetStatus, { text: string; nextStatus: AssetStatus }>> = {
       [AssetStatus.Initiation]: { text: '进入建设实施', nextStatus: AssetStatus.Construction },
       [AssetStatus.Construction]: { text: '提交竣工决算资料', nextStatus: AssetStatus.FinalAccounting },
@@ -371,7 +375,7 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
           <h2 className="text-2xl font-bold text-[#1f2329]">资产转固与管理</h2>
           <p className="text-[#646a73]">全流程管理：立项 → 建设 → 竣工验收 → 审计决算 → 财务核算 → 转固入账</p>
         </div>
-        {userRole === UserRole.AssetAdmin && (
+        {(isAssetAdmin || isInfrastructureDept) && (
           <div className="flex gap-3">
             <button
               onClick={() => {
@@ -999,7 +1003,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
       contractAmount,
       auditAmount,
       auditReductionRate,
-      status: AssetStatus.Construction,
+      status: AssetStatus.Draft,
       completionDate: formData.plannedEndDate || new Date().toISOString().split('T')[0],
       hasCadData: false,
       fundSource: formData.fundSource,
@@ -1715,6 +1719,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
   const getStatusLabel = (status: AssetStatus) => {
     const labels: Record<AssetStatus, string> = {
+      [AssetStatus.Draft]: '基建处起草',
       [AssetStatus.Initiation]: '立项阶段',
       [AssetStatus.Construction]: '建设实施',
       [AssetStatus.FinalAccounting]: '竣工决算',
