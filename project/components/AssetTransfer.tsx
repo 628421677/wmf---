@@ -701,7 +701,7 @@ const ProjectActions: React.FC<{
   userRole: UserRole;
   asInfrastructureDept: boolean;
 }> = ({ project, onEdit, onDelete, onArchive, userRole, asInfrastructureDept }) => {
-  const canEditDeleteForm = asInfrastructureDept && !project.isArchived;
+  const canEditDeleteForm = asInfrastructureDept && !project.isArchived && project.status !== AssetStatus.Archived;
   const canArchive = userRole === UserRole.AssetAdmin && project.status === AssetStatus.PendingArchive && !project.isArchived;
 
   return (
@@ -1540,8 +1540,12 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const tabs = [
     { id: 'form', label: '表单信息', icon: <FileText size={14} /> },
     { id: 'split', label: '资产拆分', icon: <Layers size={14} /> },
-    { id: 'gaojibiao', label: '高基表映射', icon: <FileCheck size={14} /> },
-    { id: 'rooms', label: '房间功能划分', icon: <Building size={14} /> },
+    ...(project.status === AssetStatus.DisposalPending
+      ? ([] as const)
+      : ([
+          { id: 'gaojibiao', label: '高基表映射', icon: <FileCheck size={14} /> },
+          { id: 'rooms', label: '房间功能划分', icon: <Building size={14} /> },
+        ] as const)),
     { id: 'audit', label: '操作记录', icon: <List size={14} /> },
   ] as const;
 
@@ -1607,7 +1611,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
   // 更新高基表数据
   const [gaojibiaoForm, setGaojibiaoForm] = useState<GaojibiaoMapping>(project.gaojibiaoData || {});
-  const isReadOnly = project.isArchived;
+  const isReadOnly = project.isArchived || project.status === AssetStatus.Archived;
 
   const handleSaveGaojibiao = () => {
     if (isReadOnly) return;
@@ -1647,7 +1651,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               <span className={`px-2 py-0.5 rounded ${currentStageStat.missingRequired > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
                 必备附件：{currentStageStat.requiredApproved}/{currentStageStat.requiredTotal}
               </span>
-              {!asInfrastructureDept && pendingReviewCount > 0 && (
+              {project.status !== AssetStatus.DisposalPending && !asInfrastructureDept && pendingReviewCount > 0 && (
                 <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-700">
                   待审核：{pendingReviewCount}
                 </span>
@@ -1664,7 +1668,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
         {/* Tabs */}
         <div className="border-b border-[#dee0e3] px-6 flex gap-1 flex-shrink-0">
-          {tabs.map(tab => (
+          {tabs.map((tab: any) => (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
@@ -1771,7 +1775,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                   </div>
                 )}
                 <div className="flex gap-2">
-                  {asInfrastructureDept && !project.isArchived && (
+                  {asInfrastructureDept && !isReadOnly && (
                     <>
                       <select
                         id="infra-upload-type"
@@ -1830,7 +1834,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                       演示：以二级学院身份上传
                     </label>
                   )}
-                  {!asInfrastructureDept && userRole === UserRole.AssetAdmin && (
+                  {project.status !== AssetStatus.DisposalPending && !asInfrastructureDept && userRole === UserRole.AssetAdmin && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -1871,7 +1875,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           };
                           onUpdate(updated);
                         }}
-                        disabled={userRole !== UserRole.AssetAdmin || project.isArchived}
+                        disabled={userRole !== UserRole.AssetAdmin || isReadOnly}
                         className="text-xs px-3 py-2 bg-green-500 text-white rounded flex items-center gap-1 hover:bg-green-600 disabled:opacity-50"
                       >
                         <Check size={14} /> 批量通过
@@ -1882,7 +1886,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               </div>
 
               {/* 上传附件（仅二级学院可用；资产管理员可勾选“演示：以二级学院身份上传”） */}
-              {!asInfrastructureDept && (effectiveUploaderRole === UserRole.CollegeAdmin) && !project.isArchived && (
+              {!asInfrastructureDept && (effectiveUploaderRole === UserRole.CollegeAdmin) && !isReadOnly && (
                 <div className="border border-[#dee0e3] rounded-lg p-4 bg-white">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="text-sm font-medium text-[#1f2329]">上传附件</div>
@@ -1991,7 +1995,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           <Download size={18} />
                         </button>
 
-                        {asInfrastructureDept && !project.isArchived && [AssetStatus.DisposalPending, AssetStatus.PendingReview].includes(project.status) && status === 'Rejected' && (
+                        {asInfrastructureDept && !isReadOnly && [AssetStatus.DisposalPending, AssetStatus.PendingReview].includes(project.status) && status === 'Rejected' && (
                           <>
                             <button
                               type="button"
@@ -2066,7 +2070,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           </>
                         )}
 
-                        {!asInfrastructureDept && userRole === UserRole.AssetAdmin && !project.isArchived && (
+                        {!asInfrastructureDept && userRole === UserRole.AssetAdmin && !isReadOnly && project.status !== AssetStatus.DisposalPending && (
                           <>
                             <button
                               onClick={() => {
