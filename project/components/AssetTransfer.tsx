@@ -1870,7 +1870,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                   </div>
                 )}
                 <div className="flex gap-2">
-                  {asInfrastructureDept && !project.isArchived && (
+                  {asInfrastructureDept && project.status === AssetStatus.Draft && (
                     <>
                       <select
                         id="infra-upload-type"
@@ -1919,7 +1919,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                     </>
                   )}
 
-                  {userRole === UserRole.AssetAdmin && !asInfrastructureDept && (
+                  {userRole === UserRole.AssetAdmin && !asInfrastructureDept && project.status !== AssetStatus.Draft && (
                     <label className="flex items-center gap-2 text-xs text-[#646a73] select-none">
                       <input
                         type="checkbox"
@@ -1929,7 +1929,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                       演示：以二级学院身份上传
                     </label>
                   )}
-                  {!asInfrastructureDept && userRole === UserRole.AssetAdmin && (
+                  {!asInfrastructureDept && userRole === UserRole.AssetAdmin && project.status !== AssetStatus.Draft && (
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
