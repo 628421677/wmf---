@@ -1244,17 +1244,21 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                 )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                {spaces.map(space => (
+                {spaces.map(space => {
+                  const hasContract = contracts.some(c => c.spaceId === space.id);
+                  const displayStatus = hasContract ? '已出租' : space.status;
+
+                  return (
                   <div key={space.id} className="border border-[#dee0e3] rounded-lg p-4 hover:shadow-md transition">
                     <div className="flex justify-between items-start mb-3">
                       <h3 className="font-semibold text-[#1f2329]">{space.name}</h3>
                       <span className={`text-xs px-2 py-0.5 rounded ${
-                        space.status === '已出租' ? 'bg-green-100 text-green-700' :
-                        space.status === '公开招租' ? 'bg-blue-100 text-blue-700' :
-                        space.status === '维修中' ? 'bg-orange-100 text-orange-700' :
+                        displayStatus === '已出租' ? 'bg-green-100 text-green-700' :
+                        displayStatus === '公开招租' ? 'bg-blue-100 text-blue-700' :
+                        displayStatus === '维修中' ? 'bg-orange-100 text-orange-700' :
                         'bg-gray-100 text-gray-600'
                       }`}>
-                        {space.status}
+                        {displayStatus}
                       </span>
                     </div>
                     <div className="space-y-2 text-sm">
@@ -1273,7 +1277,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                         <span>{space.bids.length} 条</span>
                       </div>
                     </div>
-                    {isAssetAdmin && space.status === '公开招租' && (
+                    {isAssetAdmin && displayStatus === '公开招租' && (
                       <div className="mt-3 pt-3 border-t border-[#dee0e3] flex gap-2">
                         <button
                           onClick={() => {
@@ -1289,7 +1293,8 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                       </div>
                     )}
                   </div>
-                ))}
+                );
+                })}
               </div>
             </div>
           )}
