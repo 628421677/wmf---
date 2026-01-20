@@ -1991,8 +1991,29 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           <Download size={18} />
                         </button>
 
-                        {asInfrastructureDept && !project.isArchived && status === 'Rejected' && (
+                        {asInfrastructureDept && !project.isArchived && [AssetStatus.DisposalPending, AssetStatus.PendingReview].includes(project.status) && status === 'Rejected' && (
                           <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onUpdate({
+                                  ...project,
+                                  attachments: (project.attachments || []).map(a =>
+                                    a.id === att.id
+                                      ? {
+                                          ...a,
+                                          reviewStatus: 'Pending' as const,
+                                          reviewedBy: undefined,
+                                          reviewedAt: undefined,
+                                        }
+                                      : a
+                                  ),
+                                });
+                              }}
+                              className="text-xs px-3 py-1.5 border border-[#dee0e3] text-[#1f2329] rounded hover:bg-gray-50 flex items-center gap-1"
+                            >
+                              <RefreshCw size={14} /> 重新上传
+                            </button>
                             <button
                               type="button"
                               onClick={() => {
@@ -2011,7 +2032,18 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                                   : att.type) as any;
                                 onUpdate({
                                   ...project,
-                                  attachments: (project.attachments || []).map(a => a.id === att.id ? { ...a, name, type, reviewStatus: 'Pending' as const } : a),
+                                  attachments: (project.attachments || []).map(a =>
+                                    a.id === att.id
+                                      ? {
+                                          ...a,
+                                          name,
+                                          type,
+                                          reviewStatus: 'Pending' as const,
+                                          reviewedBy: undefined,
+                                          reviewedAt: undefined,
+                                        }
+                                      : a
+                                  ),
                                 });
                               }}
                               className="text-xs px-3 py-1.5 border border-[#dee0e3] text-[#1f2329] rounded hover:bg-gray-50 flex items-center gap-1"
@@ -2077,48 +2109,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           </>
                         )}
 
-                        {asInfrastructureDept && !project.isArchived && status === 'Rejected' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const nextName = prompt('请输入新的附件名称', att.name);
-                                if (nextName === null) return;
-                                const name = nextName.trim();
-                                if (!name) {
-                                  alert('附件名称不能为空');
-                                  return;
-                                }
-                                const nextType = prompt('请输入新的附件类型（例如：contract / acceptance / audit / other）', att.type);
-                                if (nextType === null) return;
-                                const next = (nextType.trim() || att.type) as any;
-                                const type = (['approval','bidding','contract','change','drawing','acceptance','audit','other'].includes(next)
-                                  ? next
-                                  : att.type) as any;
-                                onUpdate({
-                                  ...project,
-                                  attachments: (project.attachments || []).map(a => a.id === att.id ? { ...a, name, type, reviewStatus: 'Pending' as const } : a),
-                                });
-                              }}
-                              className="text-xs px-3 py-1.5 border border-[#dee0e3] text-[#1f2329] rounded hover:bg-gray-50 flex items-center gap-1"
-                            >
-                              <RefreshCw size={14} /> 重新上传
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!confirm('确定要删除该附件吗？')) return;
-                                onUpdate({
-                                  ...project,
-                                  attachments: (project.attachments || []).filter(a => a.id !== att.id),
-                                });
-                              }}
-                              className="text-xs px-3 py-1.5 border border-red-500 text-red-600 rounded hover:bg-red-50 flex items-center gap-1"
-                            >
-                              <Trash2 size={14} /> 删除
-                            </button>
-                          </>
-                        )}
+
                       </div>
                     </div>
                   );
