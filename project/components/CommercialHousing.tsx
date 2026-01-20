@@ -10,10 +10,11 @@ import {
 import { UserRole } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, LineChart, Line } from 'recharts';
 import CommercialHousingOverview, { CreateFromOverviewPayload } from './CommercialHousingOverview';
+import { ContractUpsertModal, DeleteConfirmationModal } from './ContractModals';
 
 // ==================== 数据类型定义 ====================
 
-interface SpaceItem {
+export interface SpaceItem {
   id: string;
   name: string;
   area: number;
@@ -35,7 +36,7 @@ interface BidItem {
   status: 'Valid' | 'Invalid' | 'Winner' | 'Loser';
 }
 
-interface ContractItem {
+export interface ContractItem {
   id: string;
   contractNo: string;
   spaceId: string;
@@ -440,7 +441,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
           reminderCount: 0,
         };
 
-    setSpaces(nextSpaces);
+    setSpaces(nextSpaces as SpaceItem[]);
     setContracts(prev => [...prev, newContract]);
     if (newBill) {
       setRentBills(prev => [...prev, newBill]);
@@ -800,8 +801,84 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
   const isAssetAdmin = userRole === UserRole.AssetAdmin;
   const isTeacher = userRole === UserRole.Teacher;
 
+  const handleExportContracts = () => {
+    const filtered = contracts
+      .filter(c => statusFilter === 'all' || c.status === statusFilter)
+      .filter(c => !searchTerm || c.tenant.includes(searchTerm));
+
+    const headers = [
+      '合同编号',
+      '房源',
+      '承租方',
+      '联系方式',
+      '统一社会信用代码',
+      '面积(㎡)',
+      '月租金(元)',
+      '开始日期',
+      '结束日期',
+      '状态',
+      '签订日期',
+      '已收租金',
+      '待收租金',
+      '履约评分',
+    ];
+
+    const escape = (val: any) => {
+      const s = String(val ?? '');
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+
+    const rows = filtered.map(c => [
+      escape(c.contractNo),
+      escape(c.spaceName),
+      escape(c.tenant),
+      escape(c.tenantContact),
+      escape(c.tenantLicense || ''),
+      escape(c.area),
+      escape(c.rentPerMonth),
+      escape(c.startDate),
+      escape(c.endDate),
+      escape(c.status === 'Active' ? '履约中' : c.status === 'Expiring' ? '即将到期' : c.status === 'Expired' ? '已到期' : '已终止'),
+      escape(c.signDate),
+      escape(c.totalRentReceived),
+      escape(c.outstandingRent),
+      escape(c.performanceRating ?? ''),
+    ]);
+
+    const csv = [headers.map(escape).join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `合同管理_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
+      <ContractUpsertModal
+        isOpen={showContractUpsert}
+        onClose={() => {
+          setShowContractUpsert(false);
+          setEditingContract(null);
+        }}
+        onSave={handleUpsertContract}
+        editingContract={editingContract}
+        spaces={spaces}
+        genContractNo={genContractNo}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={!!deletingContract}
+        onClose={() => setDeletingContract(null)}
+        onConfirm={() => {
+          if (deletingContract) handleDeleteContract(deletingContract);
+        }}
+        contract={deletingContract}
+      />
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -1003,7 +1080,10 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                       <Plus size={14} /> 新增合同
                     </button>
                   )}
-                  <button className="text-xs px-3 py-1.5 border border-[#dee0e3] rounded flex items-center gap-1 hover:bg-gray-50">
+                  <button
+                    onClick={handleExportContracts}
+                    className="text-xs px-3 py-1.5 border border-[#dee0e3] rounded flex items-center gap-1 hover:bg-gray-50"
+                  >
                     <Download size={14} /> 导出
                   </button>
                 </div>
