@@ -1,25 +1,48 @@
 import React, { useState, useMemo } from 'react';
 import {
-  DollarSign, AlertTriangle, FileText, Bot, Bell, Calendar, Upload, Settings,
-  Search, Filter, Download, Plus, X, Check, Clock, Eye, Edit2, Trash2,
-  Send, MessageSquare, AlertCircle, CheckCircle, XCircle, TrendingUp, TrendingDown,
-  Building, Users, BarChart3, PieChart, RefreshCw, Printer, FileSpreadsheet,
-  ChevronDown, ChevronRight, History, Ban, CreditCard, Receipt, Scale
+  DollarSign,
+  AlertTriangle,
+  FileText,
+  Bot,
+  Bell,
+  Search,
+  Download,
+  X,
+  Check,
+  Clock,
+  Eye,
+  TrendingUp,
+  Users,
+  BarChart3,
+  History,
+  Ban,
+  CreditCard,
+  Receipt,
+  FileSpreadsheet,
+  AlertCircle,
+  Send,
+  MessageSquare,
+  CheckCircle,
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, LabelList, PieChart as RechartsPie, Pie } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart as RechartsPie, Pie } from 'recharts';
 import { generateFeeAnalysisReport } from '../services/geminiService';
-import { PersonUsage, PersonFeeBill } from '../types';
+import { PersonFeeBill } from '../types';
+import { PersonUsage } from './PersonFeeManagement';
 import ReactMarkdown from 'react-markdown';
 import {
-  UserRole, FeeStatus, RoomUseType,
-  FeeStandard, FeeTierRule, FeeBill, PaymentRecord, ReminderRecord,
-  VerificationRecord, ExtendedDepartmentFee
+  UserRole,
+  FeeStatus,
+  FeeBill,
+  PaymentRecord,
+  ReminderRecord,
+  ExtendedDepartmentFee,
 } from '../types';
 import PersonFeeManagement from './PersonFeeManagement';
 import {
-  MOCK_FEE_STANDARDS, MOCK_FEE_TIER_RULES, MOCK_FEE_BILLS,
-  MOCK_PAYMENT_RECORDS, MOCK_REMINDER_RECORDS, MOCK_VERIFICATION_RECORDS,
-  MOCK_EXTENDED_FEES
+  MOCK_FEE_BILLS,
+  MOCK_PAYMENT_RECORDS,
+  MOCK_REMINDER_RECORDS,
+  MOCK_EXTENDED_FEES,
 } from '../constants';
 import { MOCK_PERSON_USAGES } from '../constants/personFeeData';
 import { getPersonQuotaArea } from '../utils/personQuota';
@@ -47,7 +70,7 @@ function useLocalStorage<T>(key: string, initialValue: T) {
   return [storedValue, setValue] as const;
 }
 
-type TabType = 'overview' | 'persons' | 'bills' | 'payments' | 'reminders' | 'settings';
+type TabType = 'overview' | 'persons' | 'bills' | 'payments' | 'reminders';
 
 const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
   // 数据状态
@@ -55,29 +78,21 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
   const [bills, setBills] = useLocalStorage<FeeBill[]>('fee-bills', MOCK_FEE_BILLS);
   const [payments, setPayments] = useLocalStorage<PaymentRecord[]>('payment-records', MOCK_PAYMENT_RECORDS);
   const [reminders, setReminders] = useLocalStorage<ReminderRecord[]>('reminder-records', MOCK_REMINDER_RECORDS);
-  const [standards, setStandards] = useLocalStorage<FeeStandard[]>('fee-standards', MOCK_FEE_STANDARDS);
-  const [tierRules, setTierRules] = useLocalStorage<FeeTierRule[]>('tier-rules', MOCK_FEE_TIER_RULES);
-  const [verifications] = useState<VerificationRecord[]>(MOCK_VERIFICATION_RECORDS);
   const [personUsages, setPersonUsages] = useLocalStorage<PersonUsage[]>('person-usages-v1', MOCK_PERSON_USAGES);
-  const [personBills, setPersonBills] = useLocalStorage<PersonFeeBill[]>('person-fee-bills-v1', []);
+  const [, setPersonBills] = useLocalStorage<PersonFeeBill[]>('person-fee-bills-v1', []);
 
   const [billMonth, setBillMonth] = useState<string>('2025-01');
-  const [selectedDepartmentForDetail, setSelectedDepartmentForDetail] = useState<string | null>(null);
-  const [isCollegeDetailOpen, setIsCollegeDetailOpen] = useState(false);
 
   // UI 状态
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<FeeStatus | 'all'>('all');
   const [yearFilter, setYearFilter] = useState<number>(2025);
-  const [selectedBill, setSelectedBill] = useState<FeeBill | null>(null);
   const [selectedFee, setSelectedFee] = useState<ExtendedDepartmentFee | null>(null);
 
   // 模态框状态
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isStandardModalOpen, setIsStandardModalOpen] = useState(false);
   const [isGenerateBillModalOpen, setIsGenerateBillModalOpen] = useState(false);
 
   // AI 报告
@@ -139,18 +154,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
     return colors[status] || 'bg-gray-100 text-gray-600';
   };
 
-  const getUseTypeLabel = (t: RoomUseType) => {
-    const labels: Record<RoomUseType, string> = {
-      [RoomUseType.Office]: '行政办公',
-      [RoomUseType.Teaching]: '教学用房',
-      [RoomUseType.Lab]: '科研实验室',
-      [RoomUseType.Student]: '学生用房',
-      [RoomUseType.Meeting]: '会议室',
-      [RoomUseType.Storage]: '库房',
-      [RoomUseType.Other]: '其他',
-    };
-    return labels[t];
-  };
 
   const getTierColor = (percent: number) => {
     if (percent <= 10) return 'text-green-600';
@@ -239,47 +242,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
     } : f));
   };
 
-  const handleSubmitDispute = (fee: ExtendedDepartmentFee, description: string, disputeType: DisputeRecord['disputeType']) => {
-    const newDispute: DisputeRecord = {
-      id: `DIS-${Date.now()}`,
-      billId: `BILL-${fee.id}`,
-      billNo: `GF-${fee.year}-${fee.id.split('-')[1]}`,
-      departmentName: fee.departmentName,
-      disputeType,
-      description,
-      status: 'Open',
-      submittedBy: myDepartmentName,
-      submittedAt: new Date().toISOString(),
-    };
-    setDisputes(prev => [newDispute, ...prev]);
-    setFees(prev => prev.map(f => f.id === fee.id ? {
-      ...f,
-      status: FeeStatus.Disputed,
-    } : f));
-    setIsDisputeModalOpen(false);
-    setSelectedFee(null);
-  };
-
-  const handleResolveDispute = (dispute: DisputeRecord, resolution: string, approved: boolean) => {
-    setDisputes(prev => prev.map(d => d.id === dispute.id ? {
-      ...d,
-      status: approved ? 'Resolved' : 'Rejected',
-      resolution,
-      resolvedBy: '资产处管理员',
-      resolvedAt: new Date().toISOString(),
-    } : d));
-    if (approved) {
-      setFees(prev => prev.map(f => f.departmentName === dispute.departmentName ? {
-        ...f,
-        status: FeeStatus.PendingConfirm,
-      } : f));
-    } else {
-      setFees(prev => prev.map(f => f.departmentName === dispute.departmentName ? {
-        ...f,
-        status: FeeStatus.BillGenerated,
-      } : f));
-    }
-  };
 
   const handleAddToBlacklist = (fee: ExtendedDepartmentFee) => {
     setFees(prev => prev.map(f => f.id === fee.id ? { ...f, isBlacklisted: true } : f));
@@ -292,7 +254,7 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
   const handleGenerateBills = (month: string) => {
     const now = new Date().toISOString();
     const year = Number(month.slice(0, 4));
-    const basePrice = standards.find(s => s.isActive)?.basePrice ?? (MOCK_FEE_STANDARDS[0]?.basePrice ?? 120);
+    const basePrice = 120;
 
     // 1) 生成个人账单（按月）
     const rawPersonBills: PersonFeeBill[] = personUsages.map(u => {
@@ -414,26 +376,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
     setIsGenerateBillModalOpen(false);
   };
 
-  // 新增收费标准
-  const [newStandard, setNewStandard] = useState<Partial<FeeStandard>>({
-    name: '', useType: RoomUseType.Office, basePrice: 0, effectiveDate: '', isActive: true
-  });
-
-  const handleAddStandard = () => {
-    if (!newStandard.name || !newStandard.basePrice) return;
-    const standard: FeeStandard = {
-      id: `FS-${Date.now()}`,
-      name: newStandard.name!,
-      useType: newStandard.useType!,
-      basePrice: newStandard.basePrice!,
-      effectiveDate: newStandard.effectiveDate || new Date().toISOString().split('T')[0],
-      isActive: true,
-      description: newStandard.description,
-    };
-    setStandards(prev => [...prev, standard]);
-    setIsStandardModalOpen(false);
-    setNewStandard({ name: '', useType: RoomUseType.Office, basePrice: 0, effectiveDate: '', isActive: true });
-  };
 
   // 导出功能
   const handleExport = (type: 'fees' | 'bills' | 'payments') => {
@@ -486,7 +428,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
     { id: 'bills', label: '账单管理', icon: <Receipt size={16} />, badge: stats.pendingCount },
     { id: 'payments', label: '缴费记录', icon: <CreditCard size={16} /> },
     { id: 'reminders', label: '催缴管理', icon: <Bell size={16} />, adminOnly: true },
-    { id: 'settings', label: '收费设置', icon: <Settings size={16} />, adminOnly: true },
   ];
 
   // 图表数据
@@ -501,7 +442,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
   const pieData = [
     { name: '已完结', value: stats.completedCount, color: '#22c55e' },
     { name: '待处理', value: stats.pendingCount, color: '#f59e0b' },
-    { name: '争议中', value: stats.disputeCount, color: '#ef4444' },
     { name: '处理中', value: fees.filter(f => f.status === FeeStatus.FinanceProcessing).length, color: '#8b5cf6' },
   ].filter(d => d.value > 0);
 
@@ -645,6 +585,8 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
         {activeTab === 'persons' && (
           <PersonFeeManagement
             year={yearFilter}
+            personUsages={personUsages}
+            setPersonUsages={setPersonUsages}
             departmentFees={fees}
             setDepartmentFees={setFees}
             payments={payments}
@@ -866,14 +808,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
                                 <Check size={12} /> 确认账单
                               </button>
                             )}
-                            {[FeeStatus.BillGenerated, FeeStatus.PendingConfirm].includes(fee.status) && (
-                              <button
-                                onClick={() => { setSelectedFee(fee); setIsDisputeModalOpen(true); }}
-                                className="text-xs px-2 py-1 border border-red-300 text-red-600 rounded hover:bg-red-50 flex items-center gap-1"
-                              >
-                                <AlertCircle size={12} /> 提出异议
-                              </button>
-                            )}
                           </>
                         )}
                       </div>
@@ -1072,185 +1006,7 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
           </div>
         )}
 
-        {/* ========== 争议处理 Tab ========== */}
-        {activeTab === 'disputes' && (
-          <div>
-            <div className="p-4 border-b border-[#dee0e3] bg-[#fcfcfd]">
-              <h3 className="font-medium text-[#1f2329]">争议记录</h3>
-            </div>
-            <div className="divide-y divide-[#dee0e3]">
-              {disputes.length === 0 ? (
-                <div className="p-8 text-center text-[#8f959e]">暂无争议记录</div>
-              ) : (
-                disputes.filter(d => isAssetAdmin || d.departmentName === myDepartmentName).map(dispute => (
-                  <div key={dispute.id} className="p-4 hover:bg-[#f9fafb]">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="font-medium text-[#1f2329]">{dispute.departmentName}</span>
-                          <span className="text-xs text-[#8f959e]">{dispute.billNo}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded ${
-                            dispute.status === 'Open' ? 'bg-blue-100 text-blue-700' :
-                            dispute.status === 'UnderReview' ? 'bg-amber-100 text-amber-700' :
-                            dispute.status === 'Resolved' ? 'bg-green-100 text-green-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {dispute.status === 'Open' ? '待处理' :
-                             dispute.status === 'UnderReview' ? '审核中' :
-                             dispute.status === 'Resolved' ? '已解决' : '已驳回'}
-                          </span>
-                          <span className={`text-xs px-2 py-0.5 rounded ${
-                            dispute.disputeType === 'AreaDispute' ? 'bg-purple-100 text-purple-700' :
-                            dispute.disputeType === 'PriceDispute' ? 'bg-orange-100 text-orange-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {dispute.disputeType === 'AreaDispute' ? '面积争议' :
-                             dispute.disputeType === 'PriceDispute' ? '价格争议' :
-                             dispute.disputeType === 'QuotaDispute' ? '定额争议' : '其他'}
-                          </span>
-                        </div>
-                        <p className="text-sm text-[#646a73] mb-2">{dispute.description}</p>
-                        {dispute.evidence && dispute.evidence.length > 0 && (
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs text-[#8f959e]">附件:</span>
-                            {dispute.evidence.map((e, i) => (
-                              <span key={i} className="text-xs text-[#3370ff] hover:underline cursor-pointer flex items-center gap-1">
-                                <FileText size={12} /> {e}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-4 text-xs text-[#8f959e]">
-                          <span>提交人: {dispute.submittedBy}</span>
-                          <span>提交时间: {new Date(dispute.submittedAt).toLocaleString()}</span>
-                        </div>
-                        {dispute.resolution && (
-                          <div className="mt-2 p-2 bg-[#f5f6f7] rounded text-sm">
-                            <p className="text-[#646a73]"><span className="font-medium">处理结果:</span> {dispute.resolution}</p>
-                            <p className="text-xs text-[#8f959e] mt-1">处理人: {dispute.resolvedBy} | {dispute.resolvedAt && new Date(dispute.resolvedAt).toLocaleString()}</p>
-                          </div>
-                        )}
-                      </div>
-                      {isAssetAdmin && ['Open', 'UnderReview'].includes(dispute.status) && (
-                        <div className="flex gap-2 ml-4">
-                          <button
-                            onClick={() => handleResolveDispute(dispute, '经核实，同意调整', true)}
-                            className="text-xs px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                          >
-                            同意
-                          </button>
-                          <button
-                            onClick={() => handleResolveDispute(dispute, '经核实，数据无误', false)}
-                            className="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                          >
-                            驳回
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
 
-        {/* ========== 收费设置 Tab ========== */}
-        {activeTab === 'settings' && isAssetAdmin && (
-          <div className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* 收费标准 */}
-              <div className="border border-[#dee0e3] rounded-lg">
-                <div className="p-4 border-b border-[#dee0e3] flex justify-between items-center">
-                  <h3 className="font-medium text-[#1f2329]">收费标准配置</h3>
-                  <button
-                    onClick={() => setIsStandardModalOpen(true)}
-                    className="text-xs px-3 py-1.5 bg-[#3370ff] text-white rounded flex items-center gap-1 hover:bg-[#285cc9]"
-                  >
-                    <Plus size={14} /> 新增标准
-                  </button>
-                </div>
-                <div className="divide-y divide-[#dee0e3]">
-                  {standards.map(std => (
-                    <div key={std.id} className="p-4 flex justify-between items-center">
-                      <div>
-                        <p className="font-medium text-[#1f2329]">{std.name}</p>
-                        <p className="text-xs text-[#8f959e] mt-1">
-                          适用: {getUseTypeLabel(std.useType)} | 单价: ¥{std.basePrice}/m²/年
-                        </p>
-                        <p className="text-xs text-[#8f959e]">生效日期: {std.effectiveDate}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-0.5 rounded ${std.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                          {std.isActive ? '生效中' : '已停用'}
-                        </span>
-                        <button className="text-[#8f959e] hover:text-[#1f2329]">
-                          <Edit2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 阶梯费率 */}
-              <div className="border border-[#dee0e3] rounded-lg">
-                <div className="p-4 border-b border-[#dee0e3]">
-                  <h3 className="font-medium text-[#1f2329]">阶梯费率规则</h3>
-                  <p className="text-xs text-[#8f959e] mt-1">根据超额比例自动适用不同费率倍数</p>
-                </div>
-                <div className="divide-y divide-[#dee0e3]">
-                  {tierRules.map(rule => (
-                    <div key={rule.id} className="p-4">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-medium text-[#1f2329]">
-                            超额 {rule.minExcessPercent}% - {rule.maxExcessPercent ? `${rule.maxExcessPercent}%` : '以上'}
-                          </p>
-                          <p className="text-xs text-[#8f959e] mt-1">{rule.description}</p>
-                        </div>
-                        <span className={`text-lg font-bold ${
-                          rule.multiplier === 1 ? 'text-green-600' :
-                          rule.multiplier === 1.5 ? 'text-amber-600' :
-                          rule.multiplier === 2 ? 'text-orange-600' : 'text-red-600'
-                        }`}>
-                          {rule.multiplier}x
-                        </span>
-                      </div>
-                      {/* 进度条示意 */}
-                      <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${
-                            rule.multiplier === 1 ? 'bg-green-500' :
-                            rule.multiplier === 1.5 ? 'bg-amber-500' :
-                            rule.multiplier === 2 ? 'bg-orange-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${rule.maxExcessPercent ? (rule.maxExcessPercent - rule.minExcessPercent) * 2 : 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 熔断机制说明 */}
-              <div className="lg:col-span-2 border border-[#dee0e3] rounded-lg p-4 bg-red-50">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
-                  <div>
-                    <h4 className="font-medium text-red-700">熔断机制说明</h4>
-                    <ul className="text-sm text-red-600 mt-2 space-y-1">
-                      <li>• 超额比例达到50%以上，自动适用3倍熔断费率</li>
-                      <li>• 催缴3次以上仍未缴费的单位，将被加入黑名单</li>
-                      <li>• 黑名单单位的新增用房申请权限将被冻结</li>
-                      <li>• 缴费截止日期: 每年1月31日，逾期将产生滞纳金</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
 
@@ -1476,83 +1232,6 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
       )}
 
 
-      {/* 新增收费标准模态框 */}
-      {isStandardModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-lg mx-4">
-            <div className="p-4 border-b border-[#dee0e3] flex justify-between items-center">
-              <h3 className="font-medium text-lg">新增收费标准</h3>
-              <button onClick={() => setIsStandardModalOpen(false)} className="text-[#8f959e] hover:text-[#1f2329]">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#1f2329] mb-1">标准名称 *</label>
-                <input
-                  type="text"
-                  value={newStandard.name || ''}
-                  onChange={e => setNewStandard(p => ({ ...p, name: e.target.value }))}
-                  className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
-                  placeholder="如: 行政办公用房标准"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1f2329] mb-1">适用房间类型 *</label>
-                <select
-                  value={newStandard.useType}
-                  onChange={e => setNewStandard(p => ({ ...p, useType: e.target.value as RoomUseType }))}
-                  className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
-                >
-                  {Object.values(RoomUseType).map(t => (
-                    <option key={t} value={t}>{getUseTypeLabel(t)}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1f2329] mb-1">基础单价 (元/m²/年) *</label>
-                <input
-                  type="number"
-                  value={newStandard.basePrice || ''}
-                  onChange={e => setNewStandard(p => ({ ...p, basePrice: Number(e.target.value) }))}
-                  className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
-                  placeholder="如: 120"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1f2329] mb-1">生效日期 *</label>
-                <input
-                  type="date"
-                  value={newStandard.effectiveDate || ''}
-                  onChange={e => setNewStandard(p => ({ ...p, effectiveDate: e.target.value }))}
-                  className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1f2329] mb-1">说明</label>
-                <textarea
-                  value={newStandard.description || ''}
-                  onChange={e => setNewStandard(p => ({ ...p, description: e.target.value }))}
-                  className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm h-20"
-                  placeholder="可选，填写标准的适用说明"
-                />
-              </div>
-            </div>
-            <div className="p-4 border-t border-[#dee0e3] flex justify-end gap-3">
-              <button onClick={() => setIsStandardModalOpen(false)} className="px-4 py-2 border border-[#dee0e3] rounded-md text-sm hover:bg-gray-50">
-                取消
-              </button>
-              <button
-                onClick={handleAddStandard}
-                disabled={!newStandard.name || !newStandard.basePrice}
-                className="px-4 py-2 bg-[#3370ff] text-white rounded-md text-sm hover:bg-[#285cc9] disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                保存
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 生成账单模态框 */}
       {isGenerateBillModalOpen && (
