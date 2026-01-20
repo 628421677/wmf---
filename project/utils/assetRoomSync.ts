@@ -2,6 +2,33 @@ import { Project, RoomAsset } from '../types';
 
 export const ROOMS_STORAGE_KEY = 'uniassets-rooms-v1';
 
+export function seedDemoRoomsIfEmpty() {
+  if (typeof window === 'undefined') return;
+
+  const existing = getStoredRooms();
+  if (existing.length > 0) return;
+
+  const demo: RoomAsset[] = [
+    // 示例楼A
+    { id: 'RM-DEMO-A-101', roomNo: '101', buildingName: '示范楼A', area: 45, type: 'Admin', status: 'Empty', department: '', floor: 1 } as any,
+    { id: 'RM-DEMO-A-102', roomNo: '102', buildingName: '示范楼A', area: 52, type: 'Admin', status: 'Empty', department: '', floor: 1 } as any,
+    { id: 'RM-DEMO-A-201', roomNo: '201', buildingName: '示范楼A', area: 48, type: 'Teaching', status: 'Empty', department: '', floor: 2 } as any,
+    { id: 'RM-DEMO-A-202', roomNo: '202', buildingName: '示范楼A', area: 60, type: 'Teaching', status: 'Empty', department: '', floor: 2 } as any,
+    { id: 'RM-DEMO-A-301', roomNo: '301', buildingName: '示范楼A', area: 50, type: 'Teaching', status: 'Empty', department: '', floor: 3 } as any,
+    { id: 'RM-DEMO-A-302', roomNo: '302', buildingName: '示范楼A', area: 68, type: 'Lab', status: 'Empty', department: '', floor: 3 } as any,
+
+    // 示例楼B
+    { id: 'RM-DEMO-B-101', roomNo: '101', buildingName: '示范楼B', area: 40, type: 'Admin', status: 'Empty', department: '', floor: 1 } as any,
+    { id: 'RM-DEMO-B-103', roomNo: '103', buildingName: '示范楼B', area: 55, type: 'Admin', status: 'Empty', department: '', floor: 1 } as any,
+    { id: 'RM-DEMO-B-201', roomNo: '201', buildingName: '示范楼B', area: 46, type: 'Teaching', status: 'Empty', department: '', floor: 2 } as any,
+    { id: 'RM-DEMO-B-203', roomNo: '203', buildingName: '示范楼B', area: 62, type: 'Teaching', status: 'Empty', department: '', floor: 2 } as any,
+    { id: 'RM-DEMO-B-401', roomNo: '401', buildingName: '示范楼B', area: 72, type: 'Lab', status: 'Empty', department: '', floor: 4 } as any,
+    { id: 'RM-DEMO-B-402', roomNo: '402', buildingName: '示范楼B', area: 78, type: 'Lab', status: 'Empty', department: '', floor: 4 } as any,
+  ];
+
+  setStoredRooms(demo);
+}
+
 export function getStoredRooms(): RoomAsset[] {
   if (typeof window === 'undefined') return [];
   try {

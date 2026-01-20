@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { getStoredRooms } from '../utils/assetRoomSync';
+import { getStoredRooms, seedDemoRoomsIfEmpty } from '../utils/assetRoomSync';
 import {
   MapPin, Users, Building, ArrowRight, CheckCircle2, Plus, X, AlertTriangle, Ban,
   Search, Filter, Eye, FileText, Clock, ChevronDown, ChevronRight, Home,
@@ -90,6 +90,8 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
   // 数据状态
   const [requests, setRequests] = useLocalStorage<ExtendedRoomRequest[]>('housing-requests-v2', MOCK_EXTENDED_REQUESTS);
   const [availableRooms, setAvailableRooms] = useLocalStorage<AvailableRoom[]>('available-rooms', MOCK_AVAILABLE_ROOMS);
+
+  seedDemoRoomsIfEmpty();
 
   // 资产转固与管理（已归档项目）同步出的房间台账：uniassets-rooms-v1
   // 用于在“房源分配-新增”时提供楼栋/房间号/楼层/面积的可选项
