@@ -32,7 +32,8 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        CESIUM_BASE_URL: JSON.stringify('/cesium')
+        CESIUM_BASE_URL: JSON.stringify('/cesium'),
+        'import.meta.env.VITE_CESIUM_ION_TOKEN': JSON.stringify(env.VITE_CESIUM_ION_TOKEN)
       },
       resolve: {
         alias: {

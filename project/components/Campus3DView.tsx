@@ -1,18 +1,20 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Cartesian3,
-  CesiumTerrainProvider,
   Color,
   GeoJsonDataSource,
   Ion,
   Math as CesiumMath,
+  OpenStreetMapImageryProvider,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
-  Viewer
+  Viewer,
+  createWorldTerrainAsync
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN;
+Ion.defaultAccessToken = (import.meta as any).env?.VITE_CESIUM_ION_TOKEN ?? '';
+
 interface Campus3DViewProps {
   onBuildingSelect?: (building: any) => void;
   selectedBuildingId?: string | null;
@@ -20,18 +22,26 @@ interface Campus3DViewProps {
 
 const CAMPUS_CENTER = Cartesian3.fromDegrees(119.196, 26.03, 100);
 
-const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, selectedBuildingId }) => {
+const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect }) => {
   const cesiumContainer = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
   const dataSourceRef = useRef<GeoJsonDataSource | null>(null);
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+
+  const highlightColor = Color.YELLOW.withAlpha(0.9);
+  const defaultColor = Color.WHITE.withAlpha(0.85);
+  const outlineColor = Color.BLACK.withAlpha(0.6);
+
+  const setEntityHighlighted = (entity: any, highlighted: boolean) => {
+    if (!entity?.polygon) return;
+    entity.polygon.material = (highlighted ? highlightColor : defaultColor) as any;
+  };
 
   useEffect(() => {
     if (!cesiumContainer.current) return;
 
     // Initialize the Cesium Viewer
     const viewer = new Viewer(cesiumContainer.current, {
-      terrain: CesiumTerrainProvider.fromIonAsset(1),
       baseLayerPicker: false,
       timeline: false,
       animation: false,
@@ -49,16 +59,23 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, selectedB
     viewer.camera.flyTo({
       destination: CAMPUS_CENTER,
       orientation: {
-        heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(-30),
+        heading: CesiumMath.toRadians(0),
+        pitch: CesiumMath.toRadians(-30),
         roll: 0.0,
       },
       duration: 1.5,
     });
 
     const initCampus = async () => {
+      viewer.imageryLayers.removeAll();
+      viewer.imageryLayers.addImageryProvider(
+        new OpenStreetMapImageryProvider({
+          url: 'https://a.tile.openstreetmap.org/'
+        })
+      );
+
       const dataSource = await GeoJsonDataSource.load('/map/multipolygons.geojson', {
-        clampToGround: true
+        clampToGround: false
       });
 
       dataSourceRef.current = dataSource;
@@ -76,11 +93,11 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, selectedB
         const heightMeters = Number.isFinite(levels) && levels > 0 ? levels * 3.2 : 18;
 
         if (e.polygon) {
-          e.polygon.material = Color.WHITE.withAlpha(0.85);
-          e.polygon.outline = true;
-          e.polygon.outlineColor = Color.BLACK.withAlpha(0.6);
-          e.polygon.extrudedHeight = heightMeters;
-          e.polygon.height = 0;
+          e.polygon.material = (defaultColor as any);
+          e.polygon.outline = true as any;
+          e.polygon.outlineColor = (outlineColor as any);
+          e.polygon.extrudedHeight = heightMeters as any;
+          e.polygon.height = 0 as any;
           (e.polygon as any).closeTop = true;
           (e.polygon as any).closeBottom = true;
         }
@@ -105,6 +122,14 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, selectedB
         const id = (pickedId.id as string) ?? null;
         if (!id) return;
 
+        const prevId = selectedEntityId;
+        if (prevId && dataSourceRef.current) {
+          const prev = dataSourceRef.current.entities.getById(prevId) as any;
+          setEntityHighlighted(prev, false);
+        }
+
+        const current = dataSourceRef.current?.entities.getById(id) as any;
+        setEntityHighlighted(current, true);
         setSelectedEntityId(id);
 
         const name = pickedId?.name ?? pickedId?.properties?.name?.getValue?.() ?? '建筑物';
@@ -118,6 +143,8 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, selectedB
 
     viewerRef.current = viewer;
 
+    // Intentionally not using Cesium ion terrain here to avoid token-related blank maps.
+
     // Cleanup
     return () => {
       if (viewerRef.current && !viewerRef.current.isDestroyed()) {
@@ -125,40 +152,6 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, selectedB
       }
     };
   }, []);
-
-  // Update selected building highlight
-  useEffect(() => {
-    if (!viewerRef.current) return;
-
-    // Reset all buildings to default style
-    Object.values(buildingsRef.current).forEach(building => {
-      if (building.box) {
-        building.box.material = Cesium.Color.WHITE.withAlpha(0.8);
-      }
-    });
-
-    // Highlight selected building
-    if (selectedBuildingId && buildingsRef.current[selectedBuildingId]) {
-      const building = buildingsRef.current[selectedBuildingId];
-      if (building.box) {
-        building.box.material = Cesium.Color.YELLOW.withAlpha(0.8);
-        
-        // Fly to selected building
-        viewerRef.current?.camera.flyTo({
-          destination: Cesium.Cartesian3.fromElements(
-            building.position?.getValue(Cesium.JulianDate.now())?.x || 0,
-            building.position?.getValue(Cesium.JulianDate.now())?.y || 0,
-            200
-          ),
-          orientation: {
-            heading: Cesium.Math.toRadians(0),
-            pitch: Cesium.Math.toRadians(-45),
-          },
-          duration: 1.0,
-        });
-      }
-    }
-  }, [selectedBuildingId]);
 
   return (
     <div 

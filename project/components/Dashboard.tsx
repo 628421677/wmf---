@@ -35,6 +35,7 @@ import {
 } from 'recharts';
 import { UserRole } from '../types';
 import { MOCK_ALERTS } from '../constants';
+import Campus3DView from './Campus3DView';
 
 interface DashboardProps {
   userRole: UserRole;
@@ -238,69 +239,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole, onEnterBigScreen }) => 
                     <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, #333 1px, transparent 1px)', backgroundSize: '40px 40px', opacity: 0.2, transform: 'perspective(1000px) rotateX(60deg) translateY(-100px) scale(2)' }}></div>
                     
                     {mapView === 'campus' && (
-                        <div className="absolute inset-0 flex items-center justify-center" style={{ transformStyle: 'preserve-3d', transform: 'perspective(2000px) rotateX(45deg) rotateZ(-15deg) scale(0.9)' }}>
-                            {/* Buildings Layer */}
-                            {GIS_BUILDINGS.map(b => {
-                                // Determine Color based on Overlay
-                                let color = '#4b5563'; // default gray
-                                let opacity = 0.8;
-                                let glow = 'none';
-
-                                if (mapOverlay === 'vacancy') {
-                                    if (b.vacancy > 0.2) { color = '#ef4444'; glow = '0 0 15px rgba(239, 68, 68, 0.6)'; } // High Vacancy
-                                    else if (b.vacancy > 0.05) { color = '#f59e0b'; }
-                                    else { color = '#10b981'; }
-                                } else if (mapOverlay === 'density') {
-                                    if (b.density === 'High') { color = '#3b82f6'; glow = '0 0 15px rgba(59, 130, 246, 0.6)'; }
-                                    else if (b.density === 'Medium') { color = '#6366f1'; }
-                                    else { color = '#94a3b8'; }
-                                } else if (mapOverlay === 'excess') {
-                                     if (b.excess > 1) { color = '#f97316'; glow = '0 0 15px rgba(249, 115, 22, 0.6)'; } // Serious Excess
-                                     else if (b.excess > 0) { color = '#facc15'; }
-                                     else { color = '#4b5563'; }
-                                } else {
-                                    // Default Selection Highlight
-                                    if (selectedBuilding?.id === b.id) { color = '#3370ff'; glow = '0 0 20px rgba(51, 112, 255, 0.8)'; opacity = 1; }
-                                }
-
-                                return (
-                                    <div 
-                                        key={b.id}
-                                        onClick={() => { setSelectedBuilding(b); }}
-                                        onDoubleClick={() => { setSelectedBuilding(b); setMapView('building'); }}
-                                        className="absolute transition-all duration-300 ease-out hover:-translate-y-2 cursor-pointer group/building"
-                                        style={{
-                                            left: `${b.x}%`,
-                                            top: `${b.y}%`,
-                                            width: `${b.w}%`,
-                                            height: `${b.h}%`,
-                                        }}
-                                    >
-                                        {/* 3D Box Simulation using CSS borders/shadows is tricky, using simple elevated divs */}
-                                        <div 
-                                            className="w-full h-full relative"
-                                            style={{
-                                                backgroundColor: color,
-                                                opacity: opacity,
-                                                boxShadow: glow,
-                                                transform: `translateZ(${b.height}px)`, // Not real 3D without parent transform-style, simulating via height/shadow
-                                                border: '1px solid rgba(255,255,255,0.3)',
-                                            }}
-                                        >
-                                            {/* Roof */}
-                                            <div className="absolute -top-[20px] left-0 w-full h-full bg-inherit brightness-110 border border-white/20" style={{ transform: `translateY(-${b.height/2}px) skewX(-10deg)` }}>
-                                                {/* Label on Roof */}
-                                                <div className="absolute inset-0 flex items-center justify-center">
-                                                     <span className="text-[10px] text-white font-bold opacity-0 group-hover/building:opacity-100 transition-opacity bg-black/60 px-1 rounded whitespace-nowrap">{b.name}</span>
-                                                </div>
-                                            </div>
-                                            {/* Side (Fake 3D) */}
-                                            <div className="absolute top-0 -right-[10px] w-[10px] h-full bg-black/40" style={{ transform: 'skewY(-45deg)', transformOrigin: 'top left' }}></div>
-                                            <div className="absolute -bottom-[10px] left-0 w-full h-[10px] bg-black/60" style={{ transform: 'skewX(-45deg)', transformOrigin: 'top left' }}></div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                        <div className="absolute inset-0">
+                            <Campus3DView
+                                onBuildingSelect={(b: any) => setSelectedBuilding(b)}
+                                selectedBuildingId={selectedBuilding?.id}
+                            />
                         </div>
                     )}
 
