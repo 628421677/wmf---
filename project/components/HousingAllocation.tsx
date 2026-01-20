@@ -660,7 +660,7 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
 
   // Tab 配置
   const tabs: { id: TabType; label: string; icon: React.ReactNode; badge?: number }[] = [
-    { id: 'requests', label: '用房管理', icon: <FileText size={16} />, badge: stats.pendingApproval },
+    { id: 'requests', label: '用房审批', icon: <FileText size={16} />, badge: stats.pendingApproval },
     { id: 'allocation', label: '房源分配', icon: <Home size={16} />, badge: stats.availableRooms },
     { id: 'returns', label: '退房管理', icon: <RotateCcw size={16} />, badge: stats.pendingReturns },
     { id: 'history', label: '调配记录', icon: <History size={16} /> },

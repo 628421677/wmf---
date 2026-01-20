@@ -367,7 +367,7 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
       {/* 顶部标题 */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-[#1f2329]">资产建设与转固管理</h2>
+          <h2 className="text-2xl font-bold text-[#1f2329]">资产转固与管理</h2>
           <p className="text-[#646a73]">全流程管理：立项 → 建设 → 竣工验收 → 审计决算 → 财务核算 → 转固入账</p>
         </div>
         {userRole === UserRole.AssetAdmin && (
