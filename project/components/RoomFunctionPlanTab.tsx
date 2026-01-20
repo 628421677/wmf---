@@ -16,7 +16,6 @@ interface RoomFunctionPlanTabProps {
 }
 
 const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
-  projectName,
   plan,
   onChange,
   confirmed,

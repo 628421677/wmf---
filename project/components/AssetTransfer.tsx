@@ -1612,6 +1612,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   // 更新高基表数据
   const [gaojibiaoForm, setGaojibiaoForm] = useState<GaojibiaoMapping>(project.gaojibiaoData || {});
   const isReadOnly = project.isArchived || project.status === AssetStatus.Archived;
+  const canEditAfterArchived = userRole === UserRole.AssetAdmin && !asInfrastructureDept;
 
   const handleSaveGaojibiao = () => {
     if (isReadOnly) return;
@@ -1844,7 +1845,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           };
                           onUpdate(next);
                         }}
-                        disabled={isReadOnly}
+                        disabled={isReadOnly && !canEditAfterArchived}
                         className="text-xs px-3 py-2 border border-[#dee0e3] rounded flex items-center gap-1 hover:bg-gray-50 disabled:opacity-50"
                       >
                         <RefreshCw size={14} /> 初始化待审核
@@ -2268,7 +2269,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           onChange={e => setGaojibiaoForm(prev => ({ ...prev, assetCode: e.target.value }))}
                           className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
                           placeholder="高基表资产编号"
-                          disabled={isReadOnly}
+                          disabled={isReadOnly && !canEditAfterArchived}
                         />
                       </div>
                       <div>
@@ -2327,7 +2328,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                       </div>
                     </div>
                     
-                    {userRole === UserRole.AssetAdmin && !project.isArchived && (
+                    {userRole === UserRole.AssetAdmin && (!project.isArchived || (project.status === AssetStatus.Archived && !asInfrastructureDept)) && (
                       <div className="mt-4 flex justify-end">
                         <button
                           onClick={handleSaveGaojibiao}
