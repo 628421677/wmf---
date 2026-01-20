@@ -826,6 +826,18 @@ const getFieldLabel = (field: string) => {
   return labels[field] || field;
 };
 
+const getCategoryLabel = (cat: AssetCategory) => {
+  const labels: Record<AssetCategory, string> = {
+    [AssetCategory.Building]: '房屋建筑物',
+    [AssetCategory.Land]: '土地',
+    [AssetCategory.Structure]: '构筑物',
+    [AssetCategory.Equipment]: '设备',
+    [AssetCategory.Greening]: '绿化',
+    [AssetCategory.Other]: '其他',
+  };
+  return labels[cat] || cat;
+};
+
 /* ========== 新建项目模态框 ========== */
 interface NewProjectModalProps {
   mode?: 'create' | 'edit';
@@ -857,6 +869,40 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         }))
       : [];
   });
+
+  const [splitItems, setSplitItems] = useState<AssetSplitItem[]>(() => {
+    const seed = (initialProject as any)?.splitItems;
+    return Array.isArray(seed) ? seed : [];
+  });
+
+  const [newSplitItem, setNewSplitItem] = useState<Partial<AssetSplitItem>>({
+    category: AssetCategory.Building,
+    depreciationMethod: 'StraightLine',
+    depreciationYears: 50,
+  });
+
+  const addSplitItemToLocal = () => {
+    if (!newSplitItem.name || !newSplitItem.amount) return;
+
+    const item: AssetSplitItem = {
+      id: `SPLIT-${Date.now()}`,
+      category: newSplitItem.category || AssetCategory.Building,
+      name: newSplitItem.name,
+      amount: Number(newSplitItem.amount),
+      area: newSplitItem.area ? Number(newSplitItem.area) : undefined,
+      quantity: newSplitItem.quantity ? Number(newSplitItem.quantity) : undefined,
+      depreciationYears: newSplitItem.depreciationYears || 50,
+      depreciationMethod: newSplitItem.depreciationMethod || 'StraightLine',
+    };
+
+    setSplitItems(prev => [...prev, item]);
+
+    setNewSplitItem({
+      category: AssetCategory.Building,
+      depreciationMethod: 'StraightLine',
+      depreciationYears: 50,
+    });
+  };
 
   const [formData, setFormData] = useState(() => {
     if (mode === 'edit' && initialProject) {
@@ -926,6 +972,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
           roomNo: (r.roomNo || '').trim(),
           area: Number(r.area) || 0,
         })),
+        splitItems,
         plannedStartDate: formData.plannedStartDate,
         plannedEndDate: formData.plannedEndDate,
         projectManager: formData.projectManager,
@@ -967,6 +1014,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         roomNo: (r.roomNo || '').trim(),
         area: Number(r.area) || 0,
       })),
+      splitItems,
       plannedStartDate: formData.plannedStartDate,
       plannedEndDate: formData.plannedEndDate,
       projectManager: formData.projectManager,
@@ -1151,6 +1199,143 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
                 </div>
               </div>
             </div>
+            {/* 资产拆分 */}
+            <div>
+              <h4 className="font-medium text-[#1f2329] mb-4 flex items-center gap-2">
+                <Layers size={16} /> 资产拆分
+              </h4>
+
+              {/* 已拆分项 */}
+              <div className="space-y-3">
+                {splitItems.length > 0 ? (
+                  <div className="overflow-hidden border border-[#dee0e3] rounded-lg">
+                    <table className="w-full text-sm">
+                      <thead className="bg-[#f5f6f7] text-[#646a73]">
+                        <tr>
+                          <th className="px-4 py-2 text-left">资产类别</th>
+                          <th className="px-4 py-2 text-left">名称</th>
+                          <th className="px-4 py-2 text-right">金额</th>
+                          <th className="px-4 py-2 text-right">面积/数量</th>
+                          <th className="px-4 py-2 text-center">折旧年限</th>
+                          <th className="px-4 py-2 text-center w-[90px]">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#dee0e3]">
+                        {splitItems.map(item => (
+                          <tr key={item.id} className="hover:bg-[#f9f9f9]">
+                            <td className="px-4 py-3">{getCategoryLabel(item.category)}</td>
+                            <td className="px-4 py-3 font-medium">{item.name}</td>
+                            <td className="px-4 py-3 text-right">¥{item.amount.toLocaleString()}</td>
+                            <td className="px-4 py-3 text-right">
+                              {item.area ? `${item.area} m²` : item.quantity ? `${item.quantity} 台/套` : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-center">{item.depreciationYears} 年</td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => setSplitItems(prev => prev.filter(x => x.id !== item.id))}
+                                className="text-xs px-2 py-2 border border-[#dee0e3] rounded hover:bg-gray-50"
+                                title="删除"
+                              >
+                                <Minus size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-[#f9fafb] font-medium">
+                        <tr>
+                          <td colSpan={2} className="px-4 py-3">合计</td>
+                          <td className="px-4 py-3 text-right">¥{splitItems.reduce((acc, i) => acc + i.amount, 0).toLocaleString()}</td>
+                          <td colSpan={3}></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center text-[#8f959e] py-4 bg-[#f9fafb] rounded-lg">暂未拆分</div>
+                )}
+              </div>
+
+              {/* 新增拆分项 */}
+              <div className="border border-[#dee0e3] rounded-lg p-4 mt-4">
+                <h4 className="font-medium text-[#1f2329] mb-4">新增拆分项</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs text-[#646a73] mb-1">资产类别</label>
+                    <select
+                      value={newSplitItem.category}
+                      onChange={e => setNewSplitItem(prev => ({ ...prev, category: e.target.value as AssetCategory }))}
+                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                    >
+                      {Object.values(AssetCategory).map(cat => (
+                        <option key={cat} value={cat}>{getCategoryLabel(cat)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs text-[#646a73] mb-1">资产名称</label>
+                    <input
+                      value={newSplitItem.name || ''}
+                      onChange={e => setNewSplitItem(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      placeholder="例如：主体建筑"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#646a73] mb-1">金额 (元)</label>
+                    <input
+                      type="number"
+                      value={newSplitItem.amount || ''}
+                      onChange={e => setNewSplitItem(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      placeholder="0"
+                      min={0}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#646a73] mb-1">面积 (m²) / 数量</label>
+                    <input
+                      type="number"
+                      value={newSplitItem.area || newSplitItem.quantity || ''}
+                      onChange={e => {
+                        const val = Number(e.target.value);
+                        if (newSplitItem.category === AssetCategory.Equipment) {
+                          setNewSplitItem(prev => ({ ...prev, quantity: val, area: undefined }));
+                        } else {
+                          setNewSplitItem(prev => ({ ...prev, area: val, quantity: undefined }));
+                        }
+                      }}
+                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      placeholder="0"
+                      min={0}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#646a73] mb-1">折旧年限</label>
+                    <input
+                      type="number"
+                      value={newSplitItem.depreciationYears || ''}
+                      onChange={e => setNewSplitItem(prev => ({ ...prev, depreciationYears: Number(e.target.value) }))}
+                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      placeholder="50"
+                      min={0}
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={addSplitItemToLocal}
+                    disabled={!newSplitItem.name || !newSplitItem.amount}
+                    className="px-3 py-1.5 bg-[#3370ff] text-white rounded-md text-sm hover:bg-[#285cc9] flex items-center gap-1 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    <Plus size={14} /> 添加拆分项
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* 楼层与房间明细 */}
             <div>
               <h4 className="font-medium text-[#1f2329] mb-4 flex items-center gap-2">
@@ -1199,7 +1384,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
                           </td>
                         </tr>
                       ) : (
-                        roomRows.map((row, idx) => {
+                        roomRows.map((row) => {
                           const floorCount = Number((formData as any).floorCount || 0);
                           const hasFloorOptions = Number.isFinite(floorCount) && floorCount > 0;
 
@@ -1452,19 +1637,6 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
     { id: 'rooms', label: '房间功能划分', icon: <Building size={14} /> },
     { id: 'audit', label: '操作记录', icon: <List size={14} /> },
   ] as const;
-
-  const getMilestoneLabel = (m: ProjectMilestone) => {
-    const labels: Record<ProjectMilestone, string> = {
-      [ProjectMilestone.Approval]: '立项批复',
-      [ProjectMilestone.Bidding]: '招标完成',
-      [ProjectMilestone.Construction]: '开工建设',
-      [ProjectMilestone.MainComplete]: '主体完工',
-      [ProjectMilestone.Completion]: '竣工验收',
-      [ProjectMilestone.Audit]: '审计决算',
-      [ProjectMilestone.Transfer]: '转固入账',
-    };
-    return labels[m] || m;
-  };
 
   const getAttachmentTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
