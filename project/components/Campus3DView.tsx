@@ -1,12 +1,18 @@
-import React, { useEffect, useRef } from 'react';
-import { Viewer, Entity, CesiumTerrainProvider, Ion, createOsmBuildingsAsync, IonResource, Cartesian3, Color } from 'cesium';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Cartesian3,
+  CesiumTerrainProvider,
+  Color,
+  GeoJsonDataSource,
+  Ion,
+  Math as CesiumMath,
+  ScreenSpaceEventHandler,
+  ScreenSpaceEventType,
+  Viewer
+} from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
-import * as Cesium from 'cesium';
 
-// Set your Cesium ion access token (you'll need to sign up at https://cesium.com/ion/)
-// This is a placeholder - in production, use environment variables
-Ion.defaultAccessToken = 'your-cesium-ion-access-token';
-
+Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN;
 interface Campus3DViewProps {
   onBuildingSelect?: (building: any) => void;
   selectedBuildingId?: string | null;
@@ -17,7 +23,8 @@ const CAMPUS_CENTER = Cartesian3.fromDegrees(119.196, 26.03, 100);
 const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, selectedBuildingId }) => {
   const cesiumContainer = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
-  const buildingsRef = useRef<{ [key: string]: Entity }>({});
+  const dataSourceRef = useRef<GeoJsonDataSource | null>(null);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!cesiumContainer.current) return;
@@ -49,54 +56,65 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, selectedB
       duration: 1.5,
     });
 
-    // Add OSM buildings
-    createOsmBuildingsAsync().then((buildingTileset) => {
-      viewer.scene.primitives.add(buildingTileset);
-    });
+    const initCampus = async () => {
+      const dataSource = await GeoJsonDataSource.load('/map/multipolygons.geojson', {
+        clampToGround: true
+      });
 
-    // Add custom buildings from GeoJSON
-    const addCustomBuildings = async () => {
-      try {
-        // Load the OSM data for buildings
-        const response = await fetch('/map.osm');
-        const osmData = await response.text();
-        
-        // Parse OSM data and add buildings
-        // This is a simplified example - you'll need to process the OSM data
-        // to extract building geometries and properties
-        
-        // For now, we'll add a sample building
-        const sampleBuilding = viewer.entities.add({
-          name: 'Sample Building',
-          position: Cartesian3.fromDegrees(119.196, 26.03, 0),
-          box: {
-            dimensions: new Cartesian3(200, 150, 30),
-            material: Color.WHITE.withAlpha(0.8),
-            outline: true,
-            outlineColor: Color.BLACK,
-          },
-        });
-        
-        buildingsRef.current['sample'] = sampleBuilding;
-        
-        // Add click handler for buildings
-        viewer.screenSpaceEventHandler.setInputAction((movement: any) => {
-          const pickedObject = viewer.scene.pick(movement.position);
-          if (Cesium.defined(pickedObject) && pickedObject.id) {
-            onBuildingSelect?.({
-              id: 'sample',
-              name: 'Sample Building',
-              // Add more properties as needed
-            });
-          }
-        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-        
-      } catch (error) {
-        console.error('Error loading OSM data:', error);
+      dataSourceRef.current = dataSource;
+      await viewer.dataSources.add(dataSource);
+
+      const entities = dataSource.entities.values;
+      for (let i = 0; i < entities.length; i++) {
+        const e = entities[i];
+        const p: any = e.properties;
+        const isBuilding = Boolean(p?.building);
+        if (!isBuilding) continue;
+
+        const rawLevels = p?.['building:levels']?.getValue?.();
+        const levels = Number(rawLevels);
+        const heightMeters = Number.isFinite(levels) && levels > 0 ? levels * 3.2 : 18;
+
+        if (e.polygon) {
+          e.polygon.material = Color.WHITE.withAlpha(0.85);
+          e.polygon.outline = true;
+          e.polygon.outlineColor = Color.BLACK.withAlpha(0.6);
+          e.polygon.extrudedHeight = heightMeters;
+          e.polygon.height = 0;
+          (e.polygon as any).closeTop = true;
+          (e.polygon as any).closeBottom = true;
+        }
       }
+
+      viewer.camera.flyTo({
+        destination: Cartesian3.fromDegrees(119.1956, 26.0312, 800),
+        orientation: {
+          heading: CesiumMath.toRadians(0),
+          pitch: CesiumMath.toRadians(-45),
+          roll: 0
+        },
+        duration: 1.2
+      });
+
+      const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
+      handler.setInputAction((movement) => {
+        const picked = viewer.scene.pick(movement.position);
+        const pickedId: any = (picked as any)?.id;
+        if (!pickedId) return;
+
+        const id = (pickedId.id as string) ?? null;
+        if (!id) return;
+
+        setSelectedEntityId(id);
+
+        const name = pickedId?.name ?? pickedId?.properties?.name?.getValue?.() ?? '建筑物';
+        onBuildingSelect?.({ id, name });
+      }, ScreenSpaceEventType.LEFT_CLICK);
     };
-    
-    addCustomBuildings();
+
+    initCampus().catch((e) => {
+      console.error(e);
+    });
 
     viewerRef.current = viewer;
 
