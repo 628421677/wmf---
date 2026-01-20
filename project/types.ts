@@ -10,13 +10,9 @@ export enum UserRole {
 
 export enum AssetStatus {
   Draft = 'Draft',                 // 基建处起草
-  Initiation = 'Initiation',       // 立项阶段
-  Construction = 'Construction',   // 建设实施阶段
-  FinalAccounting = 'FinalAccounting', // 竣工决算阶段
-  InventoryCheck = 'InventoryCheck',   // 资产清查阶段
-  TransferIn = 'TransferIn',       // 转固入账阶段
-  Archive = 'Archive',             // 档案归档阶段
-  Disposal = 'Disposal'            // 处置
+  PendingReview = 'PendingReview', // 待审核
+  PendingArchive = 'PendingArchive', // 待归档
+  Archive = 'Archive',             // 已归档
 }
 
 export enum AllocationStatus {

@@ -120,8 +120,8 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
 
   // 统计数据
   const stats = useMemo(() => ({
-    pending: projects.filter(p => [AssetStatus.FinalAccounting, AssetStatus.InventoryCheck, AssetStatus.TransferIn].includes(p.status)).length,
-    constructionAmount: projects.filter(p => p.status === AssetStatus.Construction).reduce((acc, p) => acc + p.contractAmount, 0),
+    pending: projects.filter(p => [AssetStatus.PendingReview, AssetStatus.PendingArchive].includes(p.status)).length,
+    constructionAmount: projects.filter(p => p.status === AssetStatus.Draft).reduce((acc, p) => acc + p.contractAmount, 0),
     completed: projects.filter(p => p.status === AssetStatus.Archive).length,
     overdue: projects.filter(p => p.isOverdue).length,
   }), [projects]);
@@ -144,39 +144,31 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
 
 
 
-  const getNextAction = (status: AssetStatus): { text: string; nextStatus: AssetStatus } | null => {
-    if (status === AssetStatus.Draft) return null;
-
-    const actions: Partial<Record<AssetStatus, { text: string; nextStatus: AssetStatus }>> = {
-      [AssetStatus.Initiation]: { text: '进入建设实施', nextStatus: AssetStatus.Construction },
-      [AssetStatus.Construction]: { text: '提交竣工决算资料', nextStatus: AssetStatus.FinalAccounting },
-      [AssetStatus.FinalAccounting]: { text: '发起资产清查', nextStatus: AssetStatus.InventoryCheck },
-      [AssetStatus.InventoryCheck]: { text: '提交转固入账', nextStatus: AssetStatus.TransferIn },
-      [AssetStatus.TransferIn]: { text: '完成归档', nextStatus: AssetStatus.Archive },
-    };
-    return actions[status] || null;
+  const getNextAction = (_status: AssetStatus): { text: string; nextStatus: AssetStatus } | null => {
+    return null;
   };
 
-  // 处理项目流程推进（带审计日志）
-  const handleProcess = (project: Project) => {
-    const action = getNextAction(project.status);
-    if (!action) return;
+  const handleSubmitTransfer = (project: Project) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id !== project.id) return p;
+      return {
+        ...p,
+        status: AssetStatus.PendingReview,
+        transferApplicationSubmitted: true,
+        transferApplicationSubmittedAt: new Date().toISOString(),
+        transferApplicationSubmittedBy: '基建处',
+      };
+    }));
+  };
 
-    // 记录状态变更日志
-    logAudit(
-      'status_change',
-      'project',
-      project.id,
-      project.name,
-      {
-        status: {
-          old: project.status,
-          new: action.nextStatus
-        }
-      }
-    );
-
-    setConfirmAction({ project, action: action.text });
+  const handleApproveToArchive = (project: Project) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id !== project.id) return p;
+      return {
+        ...p,
+        status: AssetStatus.PendingArchive,
+      };
+    }));
   };
 
   const confirmProcess = () => {
@@ -204,16 +196,8 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
     setConfirmAction(null);
   };
 
-  const statusToMilestone = (status: AssetStatus): ProjectMilestone => {
-    const map: Partial<Record<AssetStatus, ProjectMilestone>> = {
-      [AssetStatus.Initiation]: ProjectMilestone.Approval,
-      [AssetStatus.Construction]: ProjectMilestone.Construction,
-      [AssetStatus.FinalAccounting]: ProjectMilestone.Audit,
-      [AssetStatus.InventoryCheck]: ProjectMilestone.Audit,
-      [AssetStatus.TransferIn]: ProjectMilestone.Transfer,
-      [AssetStatus.Archive]: ProjectMilestone.Transfer,
-    };
-    return map[status] || ProjectMilestone.Construction;
+  const statusToMilestone = (_status: AssetStatus): ProjectMilestone => {
+    return ProjectMilestone.Transfer;
   };
 
   // 删除项目（带审计日志）
@@ -373,7 +357,7 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-[#1f2329]">资产转固与管理</h2>
-          <p className="text-[#646a73]">全流程管理：立项 → 建设 → 竣工验收 → 审计决算 → 财务核算 → 转固入账</p>
+          <p className="text-[#646a73]">流程：基建处起草 → 资产处待审核 → 待归档 → 已归档</p>
         </div>
         {(isAssetAdmin || isInfrastructureDept) && (
           <div className="flex gap-3">
@@ -420,12 +404,10 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
             className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
           >
             <option value="all">全部状态</option>
-            <option value={AssetStatus.Initiation}>立项阶段</option>
-            <option value={AssetStatus.Construction}>建设实施</option>
-            <option value={AssetStatus.FinalAccounting}>竣工决算</option>
-            <option value={AssetStatus.InventoryCheck}>资产清查</option>
-            <option value={AssetStatus.TransferIn}>转固入账</option>
-            <option value={AssetStatus.Archive}>档案归档</option>
+            <option value={AssetStatus.Draft}>基建处起草</option>
+            <option value={AssetStatus.PendingReview}>待审核</option>
+            <option value={AssetStatus.PendingArchive}>待归档</option>
+            <option value={AssetStatus.Archive}>已归档</option>
           </select>
           <select
             value={fundSourceFilter}
@@ -512,14 +494,14 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
                         setDetailTab('form');
                       }}
                       onArchive={() => handleArchiveProject(project)}
+                      onSubmitTransfer={() => handleSubmitTransfer(project)}
+                      onApproveToArchive={() => handleApproveToArchive(project)}
                       userRole={userRole}
-                      onProcess={() => handleProcess(project)}
-                      nextAction={getNextAction(project.status)}
                       canProceed={(() => {
                         const stat = computeAttachmentCompletion(project.status, project.attachments || []);
                         const hasThisStageFile = stat.missingRequired === 0;
                         const auditDone = (project.attachments || []).some(a => a.type === 'audit' && (a.reviewStatus || 'Pending') === 'Approved');
-                        const requireAudit = [AssetStatus.FinalAccounting, AssetStatus.InventoryCheck, AssetStatus.TransferIn, AssetStatus.Archive].includes(project.status);
+                        const requireAudit = [AssetStatus.PendingReview, AssetStatus.PendingArchive, AssetStatus.Archive].includes(project.status);
                         return hasThisStageFile && (!requireAudit || auditDone);
                       })()}
                     />
@@ -647,11 +629,11 @@ const ProjectActionsCell: React.FC<{
   project: Project;
   onView: () => void;
   onArchive: () => void;
+  onSubmitTransfer: () => void;
+  onApproveToArchive: () => void;
   userRole: UserRole;
-  onProcess: () => void;
-  nextAction: { text: string; nextStatus: AssetStatus } | null;
   canProceed: boolean;
-}> = ({ project, onView, onArchive, userRole, onProcess, nextAction, canProceed }) => {
+}> = ({ project, onView, onArchive, onSubmitTransfer, onApproveToArchive, userRole, canProceed }) => {
   return (
     <div className="flex items-center gap-2">
       {/* 查看按钮 */}
@@ -674,18 +656,30 @@ const ProjectActionsCell: React.FC<{
         </button>
       )}
 
-      {/* 流程推进按钮 */}
-      {userRole === UserRole.AssetAdmin && !project.isArchived && nextAction && canProceed && (
+      {/* 基建处：发起转固申请（Draft -> 待审核） */}
+      {userRole === UserRole.InfrastructureDept && project.status === AssetStatus.Draft && (
         <button
-          onClick={onProcess}
+          onClick={onSubmitTransfer}
           className="text-xs border border-[#3370ff] text-[#3370ff] px-2 py-1 rounded hover:bg-[#e1eaff] flex items-center gap-1"
+          title="发起转固申请"
         >
-          {nextAction.text} <ArrowRight size={12} />
+          发起申请 <ArrowRight size={12} />
+        </button>
+      )}
+
+      {/* 资产处：审核通过并进入待归档（待审核 -> 待归档） */}
+      {userRole === UserRole.AssetAdmin && project.status === AssetStatus.PendingReview && canProceed && (
+        <button
+          onClick={onApproveToArchive}
+          className="text-xs border border-green-600 text-green-700 px-2 py-1 rounded hover:bg-green-50 flex items-center gap-1"
+          title="审核通过并进入待归档"
+        >
+          审核通过 <Check size={12} />
         </button>
       )}
 
       {/* 已归档项目标识 */}
-      {project.isArchived && (
+      {project.status === AssetStatus.Archive && (
         <span className="text-green-600 text-xs flex items-center gap-1">
           <CheckCircle size={12} /> 已归档
         </span>
@@ -1720,13 +1714,9 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const getStatusLabel = (status: AssetStatus) => {
     const labels: Record<AssetStatus, string> = {
       [AssetStatus.Draft]: '基建处起草',
-      [AssetStatus.Initiation]: '立项阶段',
-      [AssetStatus.Construction]: '建设实施',
-      [AssetStatus.FinalAccounting]: '竣工决算',
-      [AssetStatus.InventoryCheck]: '资产清查',
-      [AssetStatus.TransferIn]: '转固入账',
-      [AssetStatus.Archive]: '档案归档',
-      [AssetStatus.Disposal]: '处置中',
+      [AssetStatus.PendingReview]: '待审核',
+      [AssetStatus.PendingArchive]: '待归档',
+      [AssetStatus.Archive]: '已归档',
     };
     return labels[status] || status;
   };
