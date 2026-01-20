@@ -364,8 +364,14 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
   };
 
   const handleCreateFromOverview = (payload: CreateFromOverviewPayload) => {
-    // 仅当“已出租”场景触发（总览组件已做控制，这里再兜底）
-    if (!payload.contractNo || !payload.roomId) return;
+    // 合并逻辑：
+    // - 总览“新增”入口不再自己弹窗，而是交由这里打开“房源管理-发布房源”
+    // - 仍保留原“从总览新增已出租台账 -> 自动生成合同/账单”的能力
+    if (!payload.contractNo || !payload.roomId) {
+      setCommercialTab('spaces');
+      if (isAssetAdmin) setShowAddSpace(true);
+      return;
+    }
 
     // 避免重复创建
     const existedContract = contracts.find(c => c.contractNo === payload.contractNo);

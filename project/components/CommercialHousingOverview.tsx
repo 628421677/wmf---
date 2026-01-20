@@ -775,8 +775,21 @@ const CommercialHousingOverview: React.FC<CommercialHousingOverviewProps> = ({ s
   const businessCategoryOptions = ['餐饮服务', '教育培训', '零售服务', '其他'];
 
   const openAddModal = () => {
-    setEditingRowId(null);
-    setShowRowModal(true);
+    // 合并逻辑：总览里的“新增”统一走“房源管理-发布房源”
+    // 由父组件决定跳转/打开发布房源弹窗
+    onCreateFromOverview?.({
+      roomId: '',
+      building: '',
+      floor: '',
+      roomNo: '',
+      area: 0,
+      monthlyRent: 0,
+      tenantName: '',
+      tenantContact: '',
+      startDate: '',
+      endDate: '',
+      contractNo: '',
+    });
   };
 
   const openEditModal = (id: string) => {
@@ -837,13 +850,7 @@ const CommercialHousingOverview: React.FC<CommercialHousingOverviewProps> = ({ s
           <h3 className="font-bold text-[#1f2329]">商业/产业用房总览（按房间维度）</h3>
           <p className="text-sm text-[#646a73] mt-1">字段可逐步对接合同台账/租金收缴/经营备案与巡查记录。</p>
         </div>
-        <button
-          type="button"
-          onClick={openAddModal}
-          className="px-3 py-2 text-sm font-medium bg-[#3370ff] hover:bg-[#285cc9] text-white rounded"
-        >
-          新增
-        </button>
+
       </div>
 
       <div className="px-4 py-4 border-b bg-white">
