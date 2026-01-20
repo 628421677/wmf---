@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { getStoredRooms } from '../utils/assetRoomSync';
 import {
   MapPin, Users, Building, ArrowRight, CheckCircle2, Plus, X, AlertTriangle, Ban,
   Search, Filter, Eye, FileText, Clock, ChevronDown, ChevronRight, Home,
@@ -89,6 +90,73 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
   // 数据状态
   const [requests, setRequests] = useLocalStorage<ExtendedRoomRequest[]>('housing-requests-v2', MOCK_EXTENDED_REQUESTS);
   const [availableRooms, setAvailableRooms] = useLocalStorage<AvailableRoom[]>('available-rooms', MOCK_AVAILABLE_ROOMS);
+
+  // 资产转固与管理（已归档项目）同步出的房间台账：uniassets-rooms-v1
+  // 用于在“房源分配-新增”时提供楼栋/房间号/楼层/面积的可选项
+  const archivedProjectRooms = useMemo(() => {
+    const rooms = getStoredRooms() as any[];
+    return Array.isArray(rooms) ? rooms : [];
+  }, []);
+
+  const archivedBuildings = useMemo(() => {
+    return [...new Set(archivedProjectRooms.map(r => r.buildingName).filter(Boolean))] as string[];
+  }, [archivedProjectRooms]);
+
+  const archivedRoomNosByBuilding = useMemo(() => {
+    const map: Record<string, string[]> = {};
+
+    archivedProjectRooms.forEach(r => {
+      const b = String(r.buildingName || '');
+      const roomNo = String(r.roomNo || '');
+      if (!b || !roomNo) return;
+
+      const prev = map[b] || [];
+      if (!prev.includes(roomNo)) {
+        map[b] = [...prev, roomNo];
+      }
+    });
+
+    // 排序（尽量按数值）
+    Object.keys(map).forEach(k => {
+      map[k].sort((a, b) => {
+        const na = Number(a);
+        const nb = Number(b);
+        if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+        return a.localeCompare(b);
+      });
+    });
+
+    return map;
+  }, [archivedProjectRooms]);
+
+  const archivedFloorsByBuildingRoomNo = useMemo(() => {
+    const map: Record<string, number[]> = {};
+
+    archivedProjectRooms.forEach(r => {
+      const b = String(r.buildingName || '');
+      const roomNo = String(r.roomNo || '');
+      const floor = Number(r.floor);
+      if (!b || !roomNo || Number.isNaN(floor)) return;
+
+      const key = `${b}::${roomNo}`;
+      const prev = map[key] || [];
+      if (!prev.includes(floor)) {
+        map[key] = [...prev, floor];
+      }
+    });
+
+    Object.keys(map).forEach(k => {
+      map[k].sort((a, b) => a - b);
+    });
+
+    return map;
+  }, [archivedProjectRooms]);
+
+  const findArchivedRoomArea = (buildingName: string, roomNo: string, floor: number) => {
+    const found = archivedProjectRooms.find(r => r.buildingName === buildingName && String(r.roomNo) === String(roomNo) && Number(r.floor) === Number(floor));
+    const area = found?.area;
+    return typeof area === 'number' && !Number.isNaN(area) ? area : 0;
+  };
   const [allocationRecords, setAllocationRecords] = useLocalStorage<AllocationRecord[]>('allocation-records-v2', MOCK_ALLOCATION_RECORDS);
   const [returnRequests, setReturnRequests] = useLocalStorage<RoomReturnRequest[]>('return-requests', MOCK_RETURN_REQUESTS);
   const [temporaryBorrows] = useState<TemporaryBorrow[]>(MOCK_TEMPORARY_BORROWS);
@@ -958,11 +1026,16 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
                         notes: '',
                       };
                       setEditingRoom(room);
+                      const firstBuilding = archivedBuildings[0] || '';
+                      const firstRoomNo = firstBuilding ? (archivedRoomNosByBuilding[firstBuilding]?.[0] || '') : '';
+                      const firstFloor = firstBuilding && firstRoomNo ? (archivedFloorsByBuildingRoomNo[`${firstBuilding}::${firstRoomNo}`]?.[0] ?? 1) : 1;
+                      const firstArea = firstBuilding && firstRoomNo ? findArchivedRoomArea(firstBuilding, firstRoomNo, firstFloor) : 0;
+
                       setRoomForm({
-                        roomNo: room.roomNo,
-                        buildingName: room.buildingName,
-                        floor: room.floor,
-                        area: room.area,
+                        roomNo: firstRoomNo,
+                        buildingName: firstBuilding,
+                        floor: firstFloor,
+                        area: firstArea,
                         useType: room.useType,
                         availability: room.availability,
                         facilities: [],
@@ -1319,19 +1392,74 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#1f2329] mb-1">房间号 *</label>
-                  <input className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm" value={roomForm.roomNo} onChange={e => setRoomForm(p => ({ ...p, roomNo: e.target.value }))} />
+                  <select
+                    value={roomForm.roomNo}
+                    onChange={e => {
+                      const roomNo = e.target.value;
+                      const buildingName = roomForm.buildingName;
+                      const floors = archivedFloorsByBuildingRoomNo[`${buildingName}::${roomNo}`] || [];
+                      const nextFloor = floors[0] ?? 1;
+                      const nextArea = buildingName && roomNo ? findArchivedRoomArea(buildingName, roomNo, nextFloor) : 0;
+                      setRoomForm(p => ({ ...p, roomNo, floor: nextFloor, area: nextArea }));
+                    }}
+                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
+                    disabled={!roomForm.buildingName || ((archivedRoomNosByBuilding[roomForm.buildingName] || []).length === 0)}
+                  >
+                    <option value="">请选择房间号</option>
+                    {(roomForm.buildingName ? (archivedRoomNosByBuilding[roomForm.buildingName] || []) : []).map(no => (
+                      <option key={no} value={no}>{no}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#1f2329] mb-1">楼栋 *</label>
-                  <input className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm" value={roomForm.buildingName} onChange={e => setRoomForm(p => ({ ...p, buildingName: e.target.value }))} />
+                  <select
+                    value={roomForm.buildingName}
+                    onChange={e => {
+                      const buildingName = e.target.value;
+                      const roomNo = archivedRoomNosByBuilding[buildingName]?.[0] || '';
+                      const floors = buildingName && roomNo ? (archivedFloorsByBuildingRoomNo[`${buildingName}::${roomNo}`] || []) : [];
+                      const nextFloor = floors[0] ?? 1;
+                      const nextArea = buildingName && roomNo ? findArchivedRoomArea(buildingName, roomNo, nextFloor) : 0;
+                      setRoomForm(p => ({ ...p, buildingName, roomNo, floor: nextFloor, area: nextArea }));
+                    }}
+                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
+                    disabled={archivedBuildings.length === 0}
+                  >
+                    <option value="">请选择楼栋</option>
+                    {archivedBuildings.map(b => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#1f2329] mb-1">楼层 *</label>
-                  <input type="number" className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm" value={roomForm.floor} onChange={e => setRoomForm(p => ({ ...p, floor: Number(e.target.value) }))} />
+                  <select
+                    value={roomForm.floor}
+                    onChange={e => {
+                      const floor = Number(e.target.value);
+                      const buildingName = roomForm.buildingName;
+                      const roomNo = roomForm.roomNo;
+                      const nextArea = buildingName && roomNo ? findArchivedRoomArea(buildingName, roomNo, floor) : 0;
+                      setRoomForm(p => ({ ...p, floor, area: nextArea }));
+                    }}
+                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
+                    disabled={!roomForm.buildingName || !roomForm.roomNo || ((archivedFloorsByBuildingRoomNo[`${roomForm.buildingName}::${roomForm.roomNo}`] || []).length === 0)}
+                  >
+                    <option value={1}>请选择楼层</option>
+                    {(roomForm.buildingName && roomForm.roomNo ? (archivedFloorsByBuildingRoomNo[`${roomForm.buildingName}::${roomForm.roomNo}`] || []) : []).map(f => (
+                      <option key={String(f)} value={f}>{f}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#1f2329] mb-1">面积(m²) *</label>
-                  <input type="number" className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm" value={roomForm.area} onChange={e => setRoomForm(p => ({ ...p, area: Number(e.target.value) }))} />
+                  <input
+                    type="number"
+                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm bg-[#f5f6f7]"
+                    value={roomForm.area}
+                    readOnly
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#1f2329] mb-1">类型</label>
