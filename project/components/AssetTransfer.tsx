@@ -836,6 +836,19 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
   existingProjectCount,
 }) => {
   const [newAttachments, setNewAttachments] = useState<any[]>(initialProject?.attachments || []);
+  const [newSplitItems, setNewSplitItems] = useState<AssetSplitItem[]>(initialProject?.splitItems || []);
+  const [buildingName, setBuildingName] = useState<string>(() => {
+    const first = (initialProject?.roomFunctionPlan || [])[0];
+    return first?.buildingName || '';
+  });
+  const [newRoomPlans, setNewRoomPlans] = useState<any[]>(initialProject?.roomFunctionPlan || []);
+  const [roomForm, setRoomForm] = useState<{ floor: string; roomNo: string; area: string }>({ floor: '', roomNo: '', area: '' });
+
+  const [splitForm, setSplitForm] = useState<Partial<AssetSplitItem>>({
+    category: AssetCategory.Building,
+    depreciationMethod: 'StraightLine',
+    depreciationYears: 50,
+  });
 
   const [formData, setFormData] = useState(() => {
     if (mode === 'edit' && initialProject) {
@@ -902,6 +915,8 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         supervisor: formData.supervisor,
         completionDate: formData.plannedEndDate || initialProject.completionDate,
         attachments: newAttachments,
+        splitItems: newSplitItems,
+        roomFunctionPlan: newRoomPlans as any,
       };
 
       onUpdateProject?.(updatedProject);
@@ -943,6 +958,8 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         },
       ],
       attachments: newAttachments,
+      splitItems: newSplitItems,
+      roomFunctionPlan: newRoomPlans as any,
       isOverdue: false,
       isArchived: false, // 默认未归档
     };
@@ -1095,6 +1112,15 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-[#646a73] mb-1">楼栋名称</label>
+                  <input
+                    value={buildingName}
+                    onChange={e => setBuildingName(e.target.value)}
+                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                    placeholder="例如：理科实验楼A座"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-[#646a73] mb-1">项目负责人</label>
                   <input
                     value={formData.projectManager}
@@ -1128,6 +1154,245 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
                     onChange={e => updateField('plannedEndDate', e.target.value)}
                     className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* 房间划分（可选） */}
+            <div>
+              <h4 className="font-medium text-[#1f2329] mb-4 flex items-center gap-2">
+                <Building size={16} /> 房间划分（可选）
+              </h4>
+              <div className="border border-[#dee0e3] rounded-lg p-4 bg-white space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <select
+                    value={roomForm.floor}
+                    onChange={e => setRoomForm(prev => ({ ...prev, floor: e.target.value }))}
+                    className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                    disabled={Number(formData.floorCount || 0) <= 0}
+                  >
+                    <option value="">选择楼层</option>
+                    {(() => {
+                      const n = Number(formData.floorCount || 0);
+                      if (!Number.isFinite(n) || n <= 0) return null;
+                      return Array.from({ length: n }, (_, i) => i + 1).map(f => (
+                        <option key={f} value={String(f)}>{f}F</option>
+                      ));
+                    })()}
+                  </select>
+                  <input
+                    value={roomForm.roomNo}
+                    onChange={e => setRoomForm(prev => ({ ...prev, roomNo: e.target.value }))}
+                    className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                    placeholder="房间号"
+                  />
+                  <input
+                    type="number"
+                    value={roomForm.area}
+                    onChange={e => setRoomForm(prev => ({ ...prev, area: e.target.value }))}
+                    className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                    placeholder="面积(m²)"
+                    min={0}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const floor = (roomForm.floor || '').trim();
+                      const roomNo = (roomForm.roomNo || '').trim();
+                      const area = Number(roomForm.area);
+                      if (!buildingName.trim()) {
+                        alert('请先填写楼栋名称');
+                        return;
+                      }
+                      if (!floor) {
+                        alert('请选择楼层');
+                        return;
+                      }
+                      if (!roomNo) {
+                        alert('请输入房间号');
+                        return;
+                      }
+                      if (!Number.isFinite(area) || area <= 0) {
+                        alert('请输入正确的面积');
+                        return;
+                      }
+
+                      const item = {
+                        id: `ROOM-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                        buildingName: buildingName.trim(),
+                        roomNo: `${floor}-${roomNo}`,
+                        area,
+                        mainCategory: '',
+                        subCategory: '',
+                      };
+                      setNewRoomPlans(prev => [...prev, item]);
+                      setRoomForm(prev => ({ ...prev, roomNo: '', area: '' }));
+                    }}
+                    className="text-xs px-3 py-2 bg-[#3370ff] text-white rounded flex items-center justify-center gap-1 hover:bg-[#285cc9]"
+                  >
+                    <Plus size={14} /> 添加房间
+                  </button>
+                </div>
+
+                {newRoomPlans.length > 0 && (
+                  <div className="pt-2">
+                    <div className="text-xs text-[#646a73] mb-2">已添加房间（{newRoomPlans.length}）</div>
+                    <div className="grid gap-2">
+                      {newRoomPlans.map(r => (
+                        <div key={r.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-[#f9fafb] border border-[#dee0e3]">
+                          <div className="min-w-0">
+                            <div className="font-medium text-[#1f2329] truncate">{r.buildingName} | {r.roomNo}</div>
+                            <div className="text-xs text-[#8f959e]">面积：{r.area} m²</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setNewRoomPlans(prev => prev.filter(x => x.id !== r.id))}
+                            className="text-red-600 hover:text-red-800 p-1"
+                            title="移除"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-xs text-[#8f959e]">
+                  说明：楼层下拉框会根据“楼层”数量自动生成；房间将保存到“房间功能划分”中，后续可在详情页继续完善分类。
+                </div>
+              </div>
+            </div>
+
+            {/* 资产划分（资产拆分） */}
+            <div>
+              <h4 className="font-medium text-[#1f2329] mb-4 flex items-center gap-2">
+                <Layers size={16} /> 资产划分（拆分）（可选）
+              </h4>
+              <div className="border border-[#dee0e3] rounded-lg p-4 bg-white space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-6 gap-3">
+                  <select
+                    value={splitForm.category as any}
+                    onChange={e => setSplitForm(prev => ({ ...prev, category: e.target.value as AssetCategory }))}
+                    className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none sm:col-span-2"
+                  >
+                    {Object.values(AssetCategory).map(cat => (
+                      <option key={cat} value={cat}>
+                        {cat === AssetCategory.Building ? '房屋建筑物' :
+                         cat === AssetCategory.Land ? '土地' :
+                         cat === AssetCategory.Structure ? '构筑物' :
+                         cat === AssetCategory.Equipment ? '设备' :
+                         cat === AssetCategory.Greening ? '绿化' :
+                         '其他'}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={splitForm.name || ''}
+                    onChange={e => setSplitForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none sm:col-span-2"
+                    placeholder="资产名称"
+                  />
+                  <input
+                    type="number"
+                    value={splitForm.amount ?? ''}
+                    onChange={e => setSplitForm(prev => ({ ...prev, amount: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                    className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                    placeholder="金额(元)"
+                    min={0}
+                  />
+                  <input
+                    type="number"
+                    value={splitForm.category === AssetCategory.Equipment ? (splitForm.quantity ?? '') : (splitForm.area ?? '')}
+                    onChange={e => {
+                      const val = e.target.value === '' ? undefined : Number(e.target.value);
+                      if (splitForm.category === AssetCategory.Equipment) {
+                        setSplitForm(prev => ({ ...prev, quantity: val, area: undefined }));
+                      } else {
+                        setSplitForm(prev => ({ ...prev, area: val, quantity: undefined }));
+                      }
+                    }}
+                    className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                    placeholder={splitForm.category === AssetCategory.Equipment ? '数量' : '面积(m²)'}
+                    min={0}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <input
+                    type="number"
+                    value={splitForm.depreciationYears ?? ''}
+                    onChange={e => setSplitForm(prev => ({ ...prev, depreciationYears: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                    className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                    placeholder="折旧年限"
+                    min={0}
+                  />
+                  <select
+                    value={(splitForm.depreciationMethod as any) || 'StraightLine'}
+                    onChange={e => setSplitForm(prev => ({ ...prev, depreciationMethod: e.target.value as any }))}
+                    className="border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                  >
+                    <option value="StraightLine">年限平均法</option>
+                    <option value="Accelerated">加速折旧</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!splitForm.name || !splitForm.amount) {
+                        alert('请填写资产名称与金额');
+                        return;
+                      }
+                      const item: AssetSplitItem = {
+                        id: `SPLIT-${Date.now()}`,
+                        category: (splitForm.category || AssetCategory.Building) as AssetCategory,
+                        name: String(splitForm.name),
+                        amount: Number(splitForm.amount),
+                        area: splitForm.area !== undefined ? Number(splitForm.area) : undefined,
+                        quantity: splitForm.quantity !== undefined ? Number(splitForm.quantity) : undefined,
+                        depreciationYears: Number(splitForm.depreciationYears || 50),
+                        depreciationMethod: (splitForm.depreciationMethod || 'StraightLine') as any,
+                      };
+                      setNewSplitItems(prev => [...prev, item]);
+                      setSplitForm({
+                        category: AssetCategory.Building,
+                        depreciationMethod: 'StraightLine',
+                        depreciationYears: 50,
+                      });
+                    }}
+                    className="text-xs px-3 py-2 bg-[#3370ff] text-white rounded flex items-center gap-1 hover:bg-[#285cc9]"
+                  >
+                    <Plus size={14} /> 添加拆分项
+                  </button>
+                </div>
+
+                {newSplitItems.length > 0 && (
+                  <div className="pt-2">
+                    <div className="text-xs text-[#646a73] mb-2">已添加拆分项（{newSplitItems.length}）</div>
+                    <div className="grid gap-2">
+                      {newSplitItems.map(item => (
+                        <div key={item.id} className="flex items-center justify-between text-sm p-2 rounded-md bg-[#f9fafb] border border-[#dee0e3]">
+                          <div className="min-w-0">
+                            <div className="font-medium text-[#1f2329] truncate">{item.name}</div>
+                            <div className="text-xs text-[#8f959e]">
+                              类别：{item.category} | 金额：¥{item.amount.toLocaleString()}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setNewSplitItems(prev => prev.filter(x => x.id !== item.id))}
+                            className="text-red-600 hover:text-red-800 p-1"
+                            title="移除"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-xs text-[#8f959e]">
+                  说明：此处录入的拆分项会保存到项目的“资产拆分”中，后续可在详情页继续补充。
                 </div>
               </div>
             </div>

@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
-import { CheckCircle, Plus, Trash2 } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { CheckCircle } from 'lucide-react';
 import { RoomFunctionPlanItem, UserRole } from '../types';
-import { getMainCategories, getRoomFunctionLabel, getSubCategories } from '../utils/roomFunctionCatalog';
+import { getMainCategories, getSubCategories } from '../utils/roomFunctionCatalog';
 
 interface RoomFunctionPlanTabProps {
   projectName: string;
@@ -26,41 +26,14 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
   disabled,
   userRole,
 }) => {
-  const [newRow, setNewRow] = useState({
-    buildingName: projectName,
-    roomNo: '',
-    area: '',
-    mainCategory: 'Teaching',
-    subCategory: 'TheoryClassroom',
-    remark: '',
-  });
-
   const mains = useMemo(() => getMainCategories(), []);
-  const subs = useMemo(() => getSubCategories(newRow.mainCategory as any), [newRow.mainCategory]);
-
-  const addRow = () => {
-    if (disabled) return;
-    if (!newRow.roomNo.trim()) return;
-    const area = Number(newRow.area) || 0;
-    const item: RoomFunctionPlanItem = {
-      id: `RFP-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      buildingName: newRow.buildingName || projectName,
-      roomNo: newRow.roomNo.trim(),
-      area,
-      mainCategory: newRow.mainCategory,
-      subCategory: newRow.subCategory,
-      remark: newRow.remark?.trim() || undefined,
-    };
-    onChange([item, ...plan]);
-    setNewRow(p => ({ ...p, roomNo: '', area: '', remark: '' }));
-  };
-
-  const removeRow = (id: string) => {
-    if (disabled) return;
-    onChange(plan.filter(p => p.id !== id));
-  };
 
   const canEdit = userRole === UserRole.AssetAdmin && !disabled;
+
+  const updateRow = (id: string, patch: Partial<RoomFunctionPlanItem>) => {
+    if (!canEdit) return;
+    onChange(plan.map(r => (r.id === id ? { ...r, ...patch } : r)));
+  };
 
   return (
     <div className="space-y-4">
@@ -86,84 +59,6 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
         )}
       </div>
 
-      {/* 新增 */}
-      {canEdit && (
-        <div className="border border-[#dee0e3] rounded-lg p-4 bg-[#fcfcfd]">
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-            <div className="md:col-span-2">
-              <label className="block text-xs text-[#646a73] mb-1">建筑名称</label>
-              <input
-                className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
-                value={newRow.buildingName}
-                onChange={e => setNewRow(p => ({ ...p, buildingName: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[#646a73] mb-1">房间号 *</label>
-              <input
-                className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
-                value={newRow.roomNo}
-                onChange={e => setNewRow(p => ({ ...p, roomNo: e.target.value }))}
-                placeholder="如 101"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[#646a73] mb-1">面积(㎡)</label>
-              <input
-                type="number"
-                className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
-                value={newRow.area}
-                onChange={e => setNewRow(p => ({ ...p, area: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[#646a73] mb-1">主类</label>
-              <select
-                className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
-                value={newRow.mainCategory}
-                onChange={e => {
-                  const main = e.target.value;
-                  const nextSubs = getSubCategories(main as any);
-                  setNewRow(p => ({ ...p, mainCategory: main, subCategory: nextSubs[0]?.value || '' }));
-                }}
-              >
-                {mains.map(m => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-[#646a73] mb-1">亚类</label>
-              <select
-                className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
-                value={newRow.subCategory}
-                onChange={e => setNewRow(p => ({ ...p, subCategory: e.target.value }))}
-              >
-                {subs.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mt-3 items-end">
-            <div className="md:col-span-5">
-              <label className="block text-xs text-[#646a73] mb-1">备注</label>
-              <input
-                className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
-                value={newRow.remark}
-                onChange={e => setNewRow(p => ({ ...p, remark: e.target.value }))}
-                placeholder="可填写典型房间示例或使用说明"
-              />
-            </div>
-            <button
-              onClick={addRow}
-              className="md:col-span-1 px-3 py-2 bg-[#3370ff] text-white rounded text-sm hover:bg-[#285cc9] flex items-center justify-center gap-1"
-            >
-              <Plus size={14} /> 添加
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* 列表 */}
       <div className="overflow-hidden border border-[#dee0e3] rounded-lg">
@@ -173,9 +68,9 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
               <th className="px-4 py-2 text-left">建筑</th>
               <th className="px-4 py-2 text-left">房间号</th>
               <th className="px-4 py-2 text-right">面积(㎡)</th>
-              <th className="px-4 py-2 text-left">功能分类</th>
+              <th className="px-4 py-2 text-left">主类</th>
+              <th className="px-4 py-2 text-left">亚类</th>
               <th className="px-4 py-2 text-left">备注</th>
-              <th className="px-4 py-2 text-center">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#dee0e3]">
@@ -184,19 +79,50 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
                 <td className="px-4 py-2">{r.buildingName}</td>
                 <td className="px-4 py-2 font-medium">{r.roomNo}</td>
                 <td className="px-4 py-2 text-right">{r.area || '-'}</td>
-                <td className="px-4 py-2">{getRoomFunctionLabel(r.mainCategory as any, r.subCategory as any)}</td>
-                <td className="px-4 py-2 text-[#646a73]">{r.remark || '-'}</td>
-                <td className="px-4 py-2 text-center">
+                <td className="px-4 py-2">
                   {canEdit ? (
-                    <button
-                      onClick={() => removeRow(r.id)}
-                      className="text-red-600 hover:text-red-700"
-                      title="删除"
+                    <select
+                      className="w-full border border-[#dee0e3] rounded px-2 py-1 text-sm"
+                      value={r.mainCategory || ''}
+                      onChange={e => {
+                        const main = e.target.value;
+                        const nextSubs = getSubCategories(main as any);
+                        updateRow(r.id, { mainCategory: main, subCategory: nextSubs[0]?.value || '' });
+                      }}
                     >
-                      <Trash2 size={16} />
-                    </button>
+                      {mains.map(m => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))}
+                    </select>
                   ) : (
-                    <span className="text-xs text-[#8f959e]">-</span>
+                    <span>{r.mainCategory || '-'}</span>
+                  )}
+                </td>
+                <td className="px-4 py-2">
+                  {canEdit ? (
+                    <select
+                      className="w-full border border-[#dee0e3] rounded px-2 py-1 text-sm"
+                      value={r.subCategory || ''}
+                      onChange={e => updateRow(r.id, { subCategory: e.target.value })}
+                    >
+                      {getSubCategories((r.mainCategory || '') as any).map(s => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span>{r.subCategory || '-'}</span>
+                  )}
+                </td>
+                <td className="px-4 py-2">
+                  {canEdit ? (
+                    <input
+                      className="w-full border border-[#dee0e3] rounded px-2 py-1 text-sm"
+                      value={r.remark || ''}
+                      onChange={e => updateRow(r.id, { remark: e.target.value })}
+                      placeholder="备注"
+                    />
+                  ) : (
+                    <span className="text-[#646a73]">{r.remark || '-'}</span>
                   )}
                 </td>
               </tr>
