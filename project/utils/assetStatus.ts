@@ -1,13 +1,17 @@
 import { AssetStatus } from '../types';
 
-export function getAssetStatusLabel(status: AssetStatus): string {
+export function getAssetStatusLabel(status: AssetStatus, isArchived?: boolean): string {
+  if (status === AssetStatus.Archive && !isArchived) {
+    return '待归档';
+  }
+
   const labels: Record<AssetStatus, string> = {
     [AssetStatus.Initiation]: '立项阶段',
     [AssetStatus.Construction]: '建设实施',
     [AssetStatus.FinalAccounting]: '竣工决算',
     [AssetStatus.InventoryCheck]: '资产清查',
     [AssetStatus.TransferIn]: '转固入账',
-    [AssetStatus.Archive]: '档案归档',
+    [AssetStatus.Archive]: '已归档',
     [AssetStatus.Disposal]: '处置中',
   };
   return labels[status] || status;

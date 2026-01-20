@@ -493,7 +493,7 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
                   <td className="px-4 py-4">{project.roomCount ?? '-'}</td>
                   <td className="px-4 py-4">
                     <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getAssetStatusColor(project.status)}`}>
-                      {getAssetStatusLabel(project.status)}
+                      {getAssetStatusLabel(project.status, project.isArchived)}
                     </span>
                   </td>
                   <td className="px-4 py-4">
