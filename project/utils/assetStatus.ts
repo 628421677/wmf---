@@ -17,7 +17,12 @@ export function getAssetStatusLabel(status: AssetStatus, isArchived?: boolean): 
   return labels[status] || status;
 }
 
-export function getAssetStatusColor(status: AssetStatus): string {
+export function getAssetStatusColor(status: AssetStatus, isArchived?: boolean): string {
+  // “待归档”是一个特殊展示态：status 仍为 Archive，但 isArchived=false
+  if (status === AssetStatus.Archive && !isArchived) {
+    return 'bg-orange-50 text-orange-600 border-orange-200';
+  }
+
   const colors: Record<AssetStatus, string> = {
     [AssetStatus.Initiation]: 'bg-blue-50 text-blue-600 border-blue-200',
     [AssetStatus.Construction]: 'bg-cyan-50 text-cyan-600 border-cyan-200',

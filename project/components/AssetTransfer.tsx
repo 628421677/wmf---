@@ -103,9 +103,12 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
         status: normalizeAssetStatus((p as any).status),
       }))
       .filter(p => {
-        const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           p.contractor.toLowerCase().includes(searchTerm.toLowerCase());
+        const q = searchTerm.toLowerCase();
+        const statusLabel = getAssetStatusLabel(p.status, (p as any).isArchived).toLowerCase();
+        const matchSearch = p.name.toLowerCase().includes(q) ||
+                           p.id.toLowerCase().includes(q) ||
+                           p.contractor.toLowerCase().includes(q) ||
+                           statusLabel.includes(q);
         const matchStatus = statusFilter === 'all' || p.status === statusFilter;
         const matchFund = fundSourceFilter === 'all' || p.fundSource === fundSourceFilter;
         return matchSearch && matchStatus && matchFund;
@@ -492,7 +495,7 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
                   <td className="px-4 py-4">{project.floorCount ?? '-'}</td>
                   <td className="px-4 py-4">{project.roomCount ?? '-'}</td>
                   <td className="px-4 py-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getAssetStatusColor(project.status)}`}>
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${getAssetStatusColor(project.status, project.isArchived)}`}>
                       {getAssetStatusLabel(project.status, project.isArchived)}
                     </span>
                   </td>
