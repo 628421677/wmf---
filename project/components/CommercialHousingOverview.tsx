@@ -774,23 +774,7 @@ const CommercialHousingOverview: React.FC<CommercialHousingOverviewProps> = ({ s
   const approvedBusinessOptions = ['文具店', '咖啡店', '餐饮服务', '教育培训', '办公服务', '零售服务', '待备案'];
   const businessCategoryOptions = ['餐饮服务', '教育培训', '零售服务', '其他'];
 
-  const openAddModal = () => {
-    // 合并逻辑：总览里的“新增”统一走“房源管理-发布房源”
-    // 由父组件决定跳转/打开发布房源弹窗
-    onCreateFromOverview?.({
-      roomId: '',
-      building: '',
-      floor: '',
-      roomNo: '',
-      area: 0,
-      monthlyRent: 0,
-      tenantName: '',
-      tenantContact: '',
-      startDate: '',
-      endDate: '',
-      contractNo: '',
-    });
-  };
+
 
   const openEditModal = (id: string) => {
     setEditingRowId(id);
