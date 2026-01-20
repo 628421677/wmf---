@@ -1393,37 +1393,12 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
             <div className="p-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#1f2329] mb-1">房间号 *</label>
-                  <select
-                    value={roomForm.roomNo}
-                    onChange={e => {
-                      const roomNo = e.target.value;
-                      const buildingName = roomForm.buildingName;
-                      const floors = archivedFloorsByBuildingRoomNo[`${buildingName}::${roomNo}`] || [];
-                      const nextFloor = floors[0] ?? 1;
-                      const nextArea = buildingName && roomNo ? findArchivedRoomArea(buildingName, roomNo, nextFloor) : 0;
-                      setRoomForm(p => ({ ...p, roomNo, floor: nextFloor, area: nextArea }));
-                    }}
-                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
-                    disabled={!roomForm.buildingName || ((archivedRoomNosByBuilding[roomForm.buildingName] || []).length === 0)}
-                  >
-                    <option value="">请选择房间号</option>
-                    {(roomForm.buildingName ? (archivedRoomNosByBuilding[roomForm.buildingName] || []) : []).map(no => (
-                      <option key={no} value={no}>{no}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
                   <label className="block text-sm font-medium text-[#1f2329] mb-1">楼栋 *</label>
                   <select
                     value={roomForm.buildingName}
                     onChange={e => {
                       const buildingName = e.target.value;
-                      const roomNo = archivedRoomNosByBuilding[buildingName]?.[0] || '';
-                      const floors = buildingName && roomNo ? (archivedFloorsByBuildingRoomNo[`${buildingName}::${roomNo}`] || []) : [];
-                      const nextFloor = floors[0] ?? 1;
-                      const nextArea = buildingName && roomNo ? findArchivedRoomArea(buildingName, roomNo, nextFloor) : 0;
-                      setRoomForm(p => ({ ...p, buildingName, roomNo, floor: nextFloor, area: nextArea }));
+                      setRoomForm(p => ({ ...p, buildingName, floor: 1, roomNo: '', area: 0 }));
                     }}
                     className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
                     disabled={archivedBuildings.length === 0}
@@ -1440,17 +1415,43 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
                     value={roomForm.floor}
                     onChange={e => {
                       const floor = Number(e.target.value);
-                      const buildingName = roomForm.buildingName;
-                      const roomNo = roomForm.roomNo;
-                      const nextArea = buildingName && roomNo ? findArchivedRoomArea(buildingName, roomNo, floor) : 0;
-                      setRoomForm(p => ({ ...p, floor, area: nextArea }));
+                      setRoomForm(p => ({ ...p, floor, roomNo: '', area: 0 }));
                     }}
                     className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
-                    disabled={!roomForm.buildingName || !roomForm.roomNo || ((archivedFloorsByBuildingRoomNo[`${roomForm.buildingName}::${roomForm.roomNo}`] || []).length === 0)}
+                    disabled={!roomForm.buildingName}
                   >
-                    <option value={1}>请选择楼层</option>
-                    {(roomForm.buildingName && roomForm.roomNo ? (archivedFloorsByBuildingRoomNo[`${roomForm.buildingName}::${roomForm.roomNo}`] || []) : []).map(f => (
+                    <option value={"" as any}>请选择楼层</option>
+                    {(
+                      roomForm.buildingName
+                        ? [...new Set((archivedRoomNosByBuilding[roomForm.buildingName] || []).flatMap(no => archivedFloorsByBuildingRoomNo[`${roomForm.buildingName}::${no}`] || []))]
+                            .sort((a, b) => a - b)
+                        : []
+                    ).map(f => (
                       <option key={String(f)} value={f}>{f}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1f2329] mb-1">房间号 *</label>
+                  <select
+                    value={roomForm.roomNo}
+                    onChange={e => {
+                      const roomNo = e.target.value;
+                      const buildingName = roomForm.buildingName;
+                      const floor = Number(roomForm.floor);
+                      const nextArea = buildingName && roomNo && !Number.isNaN(floor) ? findArchivedRoomArea(buildingName, roomNo, floor) : 0;
+                      setRoomForm(p => ({ ...p, roomNo, area: nextArea }));
+                    }}
+                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm"
+                    disabled={!roomForm.buildingName || !roomForm.floor}
+                  >
+                    <option value="">请选择房间号</option>
+                    {(
+                      roomForm.buildingName && roomForm.floor
+                        ? (archivedRoomNosByBuilding[roomForm.buildingName] || []).filter(no => (archivedFloorsByBuildingRoomNo[`${roomForm.buildingName}::${no}`] || []).includes(Number(roomForm.floor)))
+                        : []
+                    ).map(no => (
+                      <option key={no} value={no}>{no}</option>
                     ))}
                   </select>
                 </div>
