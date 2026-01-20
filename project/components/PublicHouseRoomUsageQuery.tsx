@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { Edit, Plus, Trash2, X } from 'lucide-react';
 import { MOCK_AVAILABLE_ROOMS, MOCK_ROOM_TRANSFER_RECORDS, MOCK_ROOM_CHANGE_REQUESTS, MOCK_PERSON_ROOM_RELATIONS } from '../constants';
 import { RoomUseType } from '../types';
 
@@ -34,12 +33,7 @@ export interface RoomUsageRow {
 }
 
 // 表单数据类型（排除自动计算的字段）
-type RoomUsageFormData = Omit<RoomUsageRow, 'id' | 'complianceStatus'> & {
-  id?: string;
-};
 
-// 生成随机ID工具函数
-const generateId = () => Math.random().toString(36).slice(2, 11);
 
 // 合规状态徽章样式
 const getStatusBadgeClass = (status: UsageComplianceStatus) => {
@@ -451,71 +445,8 @@ export interface PublicHouseRoomUsageQueryProps {
 
 // 主组件
 const PublicHouseRoomUsageQuery: React.FC<PublicHouseRoomUsageQueryProps> = ({ keyword }) => {
-  // 模态框状态
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  
   // 数据存储（本地存储持久化）
-  const [rows, setRows] = useLocalStorage<RoomUsageRow[]>(STORAGE_KEY, buildDerivedRows());
-
-  // 当前编辑行
-  const editingRow = useMemo(() =>
-    editingId ? rows.find(row => row.id === editingId) : null
-  , [editingId, rows]);
-
-  // 保存操作（新增/编辑）
-  const handleSave = (formData: RoomUsageFormData) => {
-    const complianceStatus = computeComplianceStatus(
-      formData.approvedPurpose,
-      formData.actualPurpose
-    );
-
-    const newRow: RoomUsageRow = {
-      ...formData,
-      id: formData.id || generateId(), // 新增时生成唯一ID
-      roomId: formData.roomId || `RM-${formData.roomNo}`, // 自动生成房间编号
-      complianceStatus,
-      // 编辑时自动添加变更记录
-      changeRecord: formData.id
-        ? {
-            hasChange: true,
-            approvalNo: `系统更新-${new Date().toISOString().split('T')[0]}`,
-            changeDate: new Date().toISOString().split('T')[0]
-          }
-        : formData.changeRecord
-    };
-
-    if (editingId) {
-      // 编辑现有行
-      setRows(rows.map(row => row.id === editingId ? newRow : row));
-    } else {
-      // 新增行
-      setRows([...rows, newRow]);
-    }
-
-    // 关闭模态框
-    setIsModalOpen(false);
-    setEditingId(null);
-  };
-
-  // 删除操作
-  const handleDelete = (id: string) => {
-    if (window.confirm('确定要删除这条记录吗？')) {
-      setRows(rows.filter(row => row.id !== id));
-    }
-  };
-
-  // 打开编辑模态框
-  const handleEdit = (id: string) => {
-    setEditingId(id);
-    setIsModalOpen(true);
-  };
-
-  // 打开新增模态框
-  const handleAddNew = () => {
-    setEditingId(null);
-    setIsModalOpen(true);
-  };
+  const [rows] = useLocalStorage<RoomUsageRow[]>(STORAGE_KEY, buildDerivedRows());
 
   // 搜索过滤
   const filteredRows = useMemo(() => {
@@ -533,30 +464,12 @@ const PublicHouseRoomUsageQuery: React.FC<PublicHouseRoomUsageQueryProps> = ({ k
 
   return (
     <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
-      {/* 头部（标题+新增按钮） */}
-      <div className="p-4 border-b flex justify-between items-center">
+      <div className="p-4 border-b">
         <div>
           <h3 className="font-bold text-[#1f2329]">公用房查询（按房间维度）</h3>
-          <p className="text-sm text-[#646a73] mt-1">支持房间用途的增删改查与合规性管理</p>
+          <p className="text-sm text-[#646a73] mt-1">房间用途与合规性概览</p>
         </div>
-        <button
-          onClick={handleAddNew}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 flex items-center gap-2"
-        >
-          <Plus size={16} /> 新增记录
-        </button>
       </div>
-
-      {/* 编辑/新增模态框 */}
-      <RoomUsageFormModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingId(null);
-        }}
-        initialData={editingRow}
-        onSave={handleSave}
-      />
 
       {/* 表格区域 */}
       <div className="overflow-x-auto">
@@ -570,7 +483,6 @@ const PublicHouseRoomUsageQuery: React.FC<PublicHouseRoomUsageQueryProps> = ({ k
               <th className="px-4 py-3 text-left font-medium whitespace-nowrap">核定用途</th>
               <th className="px-4 py-3 text-left font-medium whitespace-nowrap">实际用途</th>
               <th className="px-4 py-3 text-left font-medium whitespace-nowrap">合规状态</th>
-              <th className="px-4 py-3 text-left font-medium whitespace-nowrap">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -600,24 +512,6 @@ const PublicHouseRoomUsageQuery: React.FC<PublicHouseRoomUsageQueryProps> = ({ k
                   <span className={`px-2 py-1 rounded border text-xs font-medium ${getStatusBadgeClass(row.complianceStatus)}`}>
                     {row.complianceStatus}
                   </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEdit(row.id)}
-                      className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                      title="编辑"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(row.id)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
-                      title="删除"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
                 </td>
               </tr>
             ))}
