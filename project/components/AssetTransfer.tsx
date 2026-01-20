@@ -1729,21 +1729,85 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <InfoItem label="资金来源" value={project.fundSource === FundSource.Fiscal ? '财政拨款' : project.fundSource === FundSource.SelfRaised ? '自筹资金' : '混合来源'} />
-                <InfoItem label="建设地点" value={project.location || '-'} />
-                <InfoItem label="合同金额" value={`¥${project.contractAmount.toLocaleString()}`} />
-                <InfoItem label="审计金额" value={project.auditAmount ? `¥${project.auditAmount.toLocaleString()}` : '-'} />
-                <InfoItem label="审减率" value={project.auditReductionRate !== undefined ? `${project.auditReductionRate}%` : '-'} />
-                <InfoItem label="规划面积" value={project.plannedArea ? `${project.plannedArea} m²` : '-'} />
-                <InfoItem label="楼层" value={project.floorCount ?? '-'} />
-                <InfoItem label="房间数" value={project.roomCount ?? '-'} />
-                <InfoItem label="项目负责人" value={project.projectManager || '-'} />
-                <InfoItem label="监理单位" value={project.supervisor || '-'} />
-                <InfoItem label="计划开工" value={project.plannedStartDate || '-'} />
-                <InfoItem label="计划竣工" value={project.plannedEndDate || '-'} />
-                <InfoItem label="实际开工" value={project.actualStartDate || '-'} />
-                <InfoItem label="实际竣工" value={project.actualEndDate || '-'} />
+              <div className="space-y-6">
+                {/* 基本信息（与“新建工程项目”保持一致） */}
+                <div>
+                  <h4 className="font-medium text-[#1f2329] mb-3 flex items-center gap-2">
+                    <FileText size={16} /> 基本信息
+                  </h4>
+                  <div className="grid grid-cols-2 gap-6">
+                    <InfoItem label="工程名称" value={project.name} />
+                    <InfoItem label="承建单位" value={project.contractor || '-'} />
+                    <InfoItem label="监理单位" value={project.supervisor || '-'} />
+                    <InfoItem label="合同金额" value={`¥${project.contractAmount.toLocaleString()}`} />
+                    <InfoItem label="审计金额" value={project.auditAmount ? `¥${project.auditAmount.toLocaleString()}` : '-'} />
+                    <InfoItem label="审减率" value={project.auditReductionRate !== undefined ? `${project.auditReductionRate}%` : '-'} />
+                    <InfoItem label="资金来源" value={project.fundSource === FundSource.Fiscal ? '财政拨款' : project.fundSource === FundSource.SelfRaised ? '自筹资金' : '混合来源'} />
+                  </div>
+                </div>
+
+                {/* 建设信息 */}
+                <div>
+                  <h4 className="font-medium text-[#1f2329] mb-3 flex items-center gap-2">
+                    <MapPin size={16} /> 建设信息
+                  </h4>
+                  <div className="grid grid-cols-2 gap-6">
+                    <InfoItem label="建设地点" value={project.location || '-'} />
+                    <InfoItem label="规划建筑面积" value={project.plannedArea ? `${project.plannedArea} m²` : '-'} />
+                    <InfoItem label="楼层" value={project.floorCount ?? '-'} />
+                    <InfoItem label="房间数" value={project.roomCount ?? '-'} />
+                    <InfoItem
+                      label="楼栋名称"
+                      value={project.roomFunctionPlan && project.roomFunctionPlan.length > 0 ? (project.roomFunctionPlan[0].buildingName || '-') : '-'}
+                    />
+                    <InfoItem label="项目负责人" value={project.projectManager || '-'} />
+                  </div>
+
+                  {/* 房间划分概览（与新建弹窗一致的数据源：roomFunctionPlan） */}
+                  <div className="mt-4 border border-[#dee0e3] rounded-lg p-4 bg-white">
+                    <div className="text-sm font-medium text-[#1f2329] mb-2">房间划分</div>
+                    {project.roomFunctionPlan && project.roomFunctionPlan.length > 0 ? (
+                      <div className="overflow-hidden border border-[#dee0e3] rounded-lg">
+                        <table className="w-full text-sm">
+                          <thead className="bg-[#f5f6f7] text-[#646a73]">
+                            <tr>
+                              <th className="px-4 py-2 text-left">楼栋</th>
+                              <th className="px-4 py-2 text-left">房间号</th>
+                              <th className="px-4 py-2 text-right">面积(㎡)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#dee0e3]">
+                            {project.roomFunctionPlan.slice(0, 8).map(r => (
+                              <tr key={r.id} className="hover:bg-[#f9fafb]">
+                                <td className="px-4 py-2">{r.buildingName}</td>
+                                <td className="px-4 py-2 font-medium">{r.roomNo}</td>
+                                <td className="px-4 py-2 text-right">{r.area || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-[#8f959e]">暂无房间划分数据</div>
+                    )}
+                    {project.roomFunctionPlan && project.roomFunctionPlan.length > 8 && (
+                      <div className="text-xs text-[#8f959e] mt-2">仅展示前 8 条，更多请到“房间功能划分”查看。</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 工期信息 */}
+                <div>
+                  <h4 className="font-medium text-[#1f2329] mb-3 flex items-center gap-2">
+                    <Calendar size={16} /> 工期信息
+                  </h4>
+                  <div className="grid grid-cols-2 gap-6">
+                    <InfoItem label="计划开工日期" value={project.plannedStartDate || '-'} />
+                    <InfoItem label="计划竣工日期" value={project.plannedEndDate || '-'} />
+                    <InfoItem label="实际开工日期" value={project.actualStartDate || '-'} />
+                    <InfoItem label="实际竣工日期" value={project.actualEndDate || '-'} />
+                  </div>
+                </div>
               </div>
 
               {/* 操作按钮 */}
