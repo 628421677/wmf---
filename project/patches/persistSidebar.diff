@@ -1,0 +1,61 @@
+--- a/project/App.tsx
++++ b/project/App.tsx
+@@
+-  const [sidebarOpen, setSidebarOpen] = useState(false);
+-  
+-  // Sidebar State
+-  const [isHallExpanded, setIsHallExpanded] = useState(true);
+-  const [isDigitalExpanded, setIsDigitalExpanded] = useState(true);
+-  const [isRulesExpanded, setIsRulesExpanded] = useState(true);
++  const [sidebarOpen, setSidebarOpen] = useState(false);
++
++  // ----- Sidebar (persistent) state -----
++  const getBool = (key: string, defaultVal: boolean) => {
++    try {
++      const stored = localStorage.getItem(key);
++      return stored === null ? defaultVal : JSON.parse(stored);
++    } catch (_) {
++      return defaultVal;
++    }
++  };
++
++  const [isHallExpanded, setIsHallExpanded] = useState<boolean>(() => getBool('ua_hall_exp', true));
++  const [isDigitalExpanded, setIsDigitalExpanded] = useState<boolean>(() => getBool('ua_digital_exp', true));
++  const [isRulesExpanded, setIsRulesExpanded] = useState<boolean>(() => getBool('ua_rules_exp', true));
+@@
+   useEffect(() => {
+     if (isHallSection) setIsHallExpanded(true);
+     if (isDigitalSection) setIsDigitalExpanded(true);
+     if (isRulesSection) setIsRulesExpanded(true);
+   }, [currentView, isHallSection, isDigitalSection, isRulesSection]);
++
++  // Persist sidebar section states
++  useEffect(() => {
++    localStorage.setItem('ua_hall_exp', JSON.stringify(isHallExpanded));
++  }, [isHallExpanded]);
++
++  useEffect(() => {
++    localStorage.setItem('ua_digital_exp', JSON.stringify(isDigitalExpanded));
++  }, [isDigitalExpanded]);
++
++  useEffect(() => {
++    localStorage.setItem('ua_rules_exp', JSON.stringify(isRulesExpanded));
++  }, [isRulesExpanded]);
+@@
+-            setCurrentView(view as View);
+-            setSidebarOpen(false);
++            setCurrentView(view as View);
++            if (window.innerWidth < 768) {
++              setSidebarOpen(false);
++            }
+@@
+-        onClick={() => {
+-            setCurrentView(view);
+-            setSidebarOpen(false);
+-        }}
++        onClick={() => {
++            setCurrentView(view);
++            if (window.innerWidth < 768) {
++              setSidebarOpen(false);
++            }
++        }}
