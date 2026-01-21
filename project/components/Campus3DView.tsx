@@ -17,8 +17,10 @@ Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN;
 
 type CampusOverlay = 'none' | 'vacancy' | 'density' | 'excess';
 
+type BuildingSelection = { id: string; name: string } | null;
+
 interface Campus3DViewProps {
-  onBuildingSelect?: (building: any) => void;
+  onBuildingSelect?: (building: BuildingSelection) => void;
   selectedBuildingId?: string | null;
   mapOverlay?: CampusOverlay;
 }
@@ -126,6 +128,7 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, mapOverla
 
     selectedEntityIdRef.current = null;
     setSelectedEntityId(null);
+    onBuildingSelect?.(null);
   };
 
   const setSelected = (id: string, pickedId: any) => {
