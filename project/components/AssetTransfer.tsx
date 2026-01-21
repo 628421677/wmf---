@@ -931,6 +931,8 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         plannedArea: String(initialProject.plannedArea || ''),
         plannedStartDate: initialProject.plannedStartDate || '',
         plannedEndDate: initialProject.plannedEndDate || '',
+        actualStartDate: (initialProject as any).actualStartDate || '',
+        actualEndDate: (initialProject as any).actualEndDate || '',
         projectManager: initialProject.projectManager || '',
         supervisor: initialProject.supervisor || '',
         floorCount: String(initialProject.floorCount || ''),
@@ -948,6 +950,8 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
       plannedArea: '',
       plannedStartDate: '',
       plannedEndDate: '',
+      actualStartDate: '',
+      actualEndDate: '',
       projectManager: '',
       supervisor: '',
       floorCount: '',
@@ -980,6 +984,8 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
         roomCount: formData.roomCount ? Number(formData.roomCount) : undefined,
         plannedStartDate: formData.plannedStartDate,
         plannedEndDate: formData.plannedEndDate,
+        actualStartDate: (formData as any).actualStartDate,
+        actualEndDate: (formData as any).actualEndDate,
         projectManager: formData.projectManager,
         supervisor: formData.supervisor,
         completionDate: formData.plannedEndDate || initialProject.completionDate,
@@ -1221,6 +1227,24 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
                     type="date"
                     value={formData.plannedEndDate}
                     onChange={e => updateField('plannedEndDate', e.target.value)}
+                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#646a73] mb-1">实际开工日期</label>
+                  <input
+                    type="date"
+                    value={(formData as any).actualStartDate}
+                    onChange={e => updateField('actualStartDate', e.target.value)}
+                    className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#646a73] mb-1">实际竣工日期</label>
+                  <input
+                    type="date"
+                    value={(formData as any).actualEndDate}
+                    onChange={e => updateField('actualEndDate', e.target.value)}
                     className="w-full border border-[#dee0e3] rounded-md px-3 py-2 text-sm focus:border-[#3370ff] outline-none"
                   />
                 </div>
