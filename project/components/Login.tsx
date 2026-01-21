@@ -26,7 +26,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                      <div className="w-10 h-10 bg-[#3370ff] rounded-lg flex items-center justify-center text-white shadow-md">
                          <div className="w-5 h-5 border-2 border-white rounded-sm"></div>
                      </div>
-                     <span className="text-xl font-bold tracking-tight text-[#1f2329]">UniAssets</span>
+                     <span className="text-xl font-bold tracking-tight text-[#1f2329]">智慧福工</span>
                  </div>
                  <h1 className="text-4xl font-bold text-[#1f2329] leading-tight mb-4">
                      高效连接，<br/>智能资产管理

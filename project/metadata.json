@@ -1,5 +1,5 @@
 {
-  "name": "UniAssets - 高校国有资产管理系统",
+  "name": "智慧福工 - 高校国有资产管理系统",
   "description": "综合性高校资产管理ERP系统，涵盖建设转固、公用房调配、有偿使用收费、经营性房产及维修物业管理等核心业务。",
   "requestFramePermissions": [
     "camera"

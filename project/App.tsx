@@ -315,7 +315,7 @@ const App: React.FC = () => {
                 <Building2 className="text-white" size={18} />
             </div>
             <div>
-                <h1 className="text-lg font-bold text-[#1f2329] tracking-tight">UniAssets</h1>
+                <h1 className="text-lg font-bold text-[#1f2329] tracking-tight">智慧福工</h1>
             </div>
         </div>
 
@@ -398,7 +398,7 @@ const App: React.FC = () => {
                     <Menu size={20} />
                 </button>
                 <div className="flex items-center text-sm">
-                    <span className="text-[#8f959e]">UniAssets</span>
+                    <span className="text-[#8f959e]">智慧福工</span>
                     <span className="mx-2 text-[#dee0e3]">/</span>
                     <span className="text-[#1f2329] font-medium flex items-center">
                         {getBreadcrumb()}
