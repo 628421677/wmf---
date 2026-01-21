@@ -7,8 +7,7 @@ import {
   Save, 
   RotateCcw, 
   AlertTriangle,
-  Plus,
-  Code
+  Plus
 } from 'lucide-react';
 import { MOCK_QUOTA_CONFIGS, MOCK_FEE_TIERS, MOCK_ALERT_CONFIGS } from '../constants';
 import { QuotaConfig, FeeTier, AlertConfig } from '../types';
@@ -49,6 +48,20 @@ const RuleEngine: React.FC<RuleEngineProps> = ({ subView = 'quota' }) => {
           case 'alert': return '定义利用率、安全及财务维度的自动预警阈值。';
           default: return '';
       }
+  };
+
+  const getTierDescription = (tier: FeeTier) => {
+    const name = tier.rateName;
+    if (name.includes('费率 A')) {
+      return '适用于轻微或可控的超额占用，用于柔性调节，引导单位尽快回归定额范围。';
+    }
+    if (name.includes('费率 B')) {
+      return '适用于中度超额占用，具有明显惩罚性，促使单位在过渡期内完成腾退或调配。';
+    }
+    if (name.includes('费率 C')) {
+      return '适用于严重超额占用的“熔断性”费率，通过高倍率形成强约束，防止长期占用。';
+    }
+    return '按超额比例区间执行对应倍率计费。';
   };
 
   return (
@@ -131,13 +144,16 @@ const RuleEngine: React.FC<RuleEngineProps> = ({ subView = 'quota' }) => {
                 <div className="bg-[#fcfcfd] border border-[#dee0e3] rounded-lg p-6">
                     <h4 className="text-sm font-bold text-[#1f2329] mb-4">超额阶梯费率模型</h4>
                     <div className="flex flex-col md:flex-row gap-2 items-stretch h-32 md:h-24 w-full">
-                        {feeTiers.map((tier, index) => (
+                        {feeTiers.map((tier) => (
                             <div key={tier.id} className={`flex-1 rounded-lg border flex flex-col items-center justify-center p-2 relative ${tier.color.replace('text-', 'border-').replace('800', '200')}`}>
                                 <div className={`absolute inset-0 opacity-10 ${tier.color.split(' ')[0]}`}></div>
                                 <span className="font-bold text-sm z-10">{tier.rateName}</span>
                                 <span className="text-2xl font-bold z-10">{tier.multiplier}x</span>
                                 <span className="text-xs mt-1 z-10 opacity-70">
                                     {tier.minExcess}% {tier.maxExcess ? `- ${tier.maxExcess}%` : '以上'}
+                                </span>
+                                <span className="text-[10px] mt-1 z-10 opacity-80 text-center px-2">
+                                    {getTierDescription(tier)}
                                 </span>
                             </div>
                         ))}
