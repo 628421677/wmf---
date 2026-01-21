@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -35,7 +35,7 @@ import {
 } from 'recharts';
 import { UserRole } from '../types';
 import { MOCK_ALERTS } from '../constants';
-import Campus3DView from './Campus3DView';
+import Campus3DView, { Campus3DViewHandle } from './Campus3DView';
 
 interface DashboardProps {
   userRole: UserRole;
@@ -118,7 +118,8 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole, onEnterBigScreen }) => 
   const [mapView, setMapView] = useState<'campus' | 'building'>('campus');
   const [selectedBuilding, setSelectedBuilding] = useState<any>(null);
   const [mapOverlay, setMapOverlay] = useState<'none' | 'vacancy' | 'density' | 'excess'>('none');
-  const [showAllAlerts, setShowAllAlerts] = useState(false);
+    const [showAllAlerts, setShowAllAlerts] = useState(false);
+  const campus3DViewRef = useRef<Campus3DViewHandle>(null);
 
 
   // 1. Asset Admin View (Global)
@@ -241,6 +242,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole, onEnterBigScreen }) => 
                     {mapView === 'campus' && (
                         <div className="absolute inset-0">
                             <Campus3DView
+                                ref={campus3DViewRef}
                                 onBuildingSelect={(b: any) => setSelectedBuilding(b)}
                                 selectedBuildingId={selectedBuilding?.id}
                                 mapOverlay={mapOverlay}
@@ -278,6 +280,16 @@ const Dashboard: React.FC<DashboardProps> = ({ userRole, onEnterBigScreen }) => 
                                 </div>
                             </div>
                         </div>
+                    )}
+
+                    {/* Reset View Button */}
+                    {mapView === 'campus' && (
+                        <button
+                            onClick={() => campus3DViewRef.current?.resetView()}
+                            className="absolute bottom-4 left-4 z-30 flex items-center gap-2 bg-black/60 backdrop-blur-md border border-white/10 text-white/80 hover:text-white px-3 py-2 rounded-md text-xs font-medium hover:bg-black/70 transition-colors"
+                        >
+                            重置视角
+                        </button>
                     )}
 
                     {/* Footer Info Overlay */}
