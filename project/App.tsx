@@ -34,12 +34,7 @@ export type View =
   | 'cockpit'      // Decision Cockpit (was dashboard)
   | 'todos'        // My Todos (New)
   
-  // Digital Assets
-  | 'digital'      // Root/Default
-  | 'digital-land'
-  | 'digital-building'
-  | 'digital-room'
-
+  
   // Rule Engine
   | 'rules'        // Root/Default
   | 'rules-quota'
@@ -70,10 +65,6 @@ const viewToPath: Record<View, string> = {
   inventory: '/hall/inventory',
   'public-house-query': '/hall/public-house-query',
   reports: '/hall/reports',
-  digital: '/digital',
-  'digital-land': '/digital/land',
-  'digital-building': '/digital/building',
-  'digital-room': '/digital/room',
   rules: '/rules',
   'rules-quota': '/rules/quota',
   'rules-fee': '/rules/fee',
@@ -104,7 +95,7 @@ const App: React.FC = () => {
   // Helper to determine active section
   const isHallModule = ['assets', 'allocation', 'fees', 'commercial', 'maintenance', 'inventory', 'public-house-query', 'reports'].includes(currentView);
   const isHallSection = currentView === 'hall' || isHallModule;
-  const isDigitalModule = ['digital-land', 'digital-building', 'digital-room'].includes(currentView);
+  const isDigitalModule = ['digital-building', 'digital-room'].includes(currentView);
   const isDigitalSection = currentView === 'digital' || isDigitalModule;
   const isRulesModule = ['rules-quota', 'rules-fee', 'rules-alert'].includes(currentView);
   const isRulesSection = currentView === 'rules' || isRulesModule;
@@ -164,7 +155,7 @@ const App: React.FC = () => {
       
       // Asset Digitalization (Sub-views)
       case 'digital':
-      case 'digital-land': return <AssetDigitalization userRole={userRole} subView="land" />;
+      
       case 'digital-building': return <AssetDigitalization userRole={userRole} subView="building" />;
       case 'digital-room': return <AssetDigitalization userRole={userRole} subView="room" />;
 
@@ -243,7 +234,7 @@ const App: React.FC = () => {
         
         // Digital Breadcrumbs
         case 'digital': return '资产数字化';
-        case 'digital-land': return <>{digitalCrumb} <span className="text-[#1f2329]"> / 土地资源</span></>;
+        
         case 'digital-building': return <>{digitalCrumb} <span className="text-[#1f2329]"> / 房屋建筑</span></>;
         case 'digital-room': return <>{digitalCrumb} <span className="text-[#1f2329]"> / 房间原子单元</span></>;
 
@@ -288,7 +279,6 @@ const App: React.FC = () => {
   ];
 
   const digitalSubMenus: { id: View; label: string; }[] = [
-      { id: 'digital-land', label: '土地资源' },
       { id: 'digital-building', label: '房屋建筑' },
       { id: 'digital-room', label: '房间原子单元' },
   ];
@@ -358,22 +348,6 @@ const App: React.FC = () => {
             
             {userRole === UserRole.AssetAdmin && (
               <>
-                {/* Asset Digitalization with Sub Menu */}
-                <NavItem 
-                    view="digital" 
-                    label="资产数字化" 
-                    icon={Database} 
-                    isActive={isDigitalSection}
-                    hasSubMenu
-                    isOpen={isDigitalExpanded}
-                    onToggle={() => setIsDigitalExpanded(!isDigitalExpanded)}
-                />
-                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isDigitalExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    {digitalSubMenus.map(item => (
-                        <SubNavItem key={item.id} view={item.id} label={item.label} />
-                    ))}
-                </div>
-
                 {/* Rule Engine with Sub Menu */}
                 <NavItem 
                     view="rules" 
