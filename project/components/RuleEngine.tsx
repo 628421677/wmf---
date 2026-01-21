@@ -144,7 +144,7 @@ const RuleEngine: React.FC<RuleEngineProps> = ({ subView = 'quota' }) => {
                     </div>
                     <div className="mt-4 text-xs text-[#8f959e] flex gap-2 items-center">
                         <AlertTriangle size={12} />
-                        提示: 超过60%的部分将触发“熔断性”高倍率收费。
+                        说明: “超额阶梯费率模型”以“实际占用面积/核定定额面积 - 1”计算超额比例，并按阶梯区间分别乘以对应倍率计费；区间越高倍率越大，用于对长期、严重超额占用形成强约束。超过60%的部分将触发“熔断性”高倍率收费。
                     </div>
                 </div>
 
@@ -188,21 +188,7 @@ const RuleEngine: React.FC<RuleEngineProps> = ({ subView = 'quota' }) => {
                     </div>
                 </div>
 
-                {/* Logic Builder Mock */}
-                <div className="bg-[#1e1e1e] rounded-lg p-6 text-white font-mono text-sm relative overflow-hidden group">
-                    <div className="absolute top-2 right-2 text-white/30"><Code size={20}/></div>
-                    <h4 className="text-[#a5b3ce] mb-3 font-sans font-bold">高级豁免规则引擎 (Expression)</h4>
-                    <div className="space-y-2">
-                            <p><span className="text-[#c678dd]">IF</span> ( <span className="text-[#e06c75]">CurrentDate</span> - <span className="text-[#e06c75]">Department.EstablishDate</span> ) &lt; <span className="text-[#d19a66]">3 Years</span></p>
-                            <p className="pl-4"><span className="text-[#c678dd]">THEN</span> <span className="text-[#98c379]">Fee_Exemption</span> = <span className="text-[#d19a66]">TRUE</span> <span className="text-[#5c6370]">// 新设机构三年免收</span></p>
-                            <p className="mt-2"><span className="text-[#c678dd]">ELSE IF</span> ( <span className="text-[#e06c75]">Room.Type</span> == <span className="text-[#98c379]">'National_Lab'</span> )</p>
-                            <p className="pl-4"><span className="text-[#c678dd]">THEN</span> <span className="text-[#98c379]">Quota_Bonus</span> = <span className="text-[#d19a66]">2.0</span> <span className="text-[#5c6370]">// 国家重点实验室定额翻倍</span></p>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-white/10 flex gap-3">
-                            <button className="px-3 py-1 bg-[#3370ff] text-white rounded text-xs hover:bg-[#285cc9]">编辑脚本</button>
-                            <button className="px-3 py-1 bg-white/10 text-white rounded text-xs hover:bg-white/20">测试规则</button>
-                    </div>
-                </div>
+
             </div>
           )}
 
