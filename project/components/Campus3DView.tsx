@@ -13,7 +13,6 @@ import {
 } from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
 
-// Vite's `define` will replace this with the actual token string during build
 Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN;
 
 type CampusOverlay = 'none' | 'vacancy' | 'density' | 'excess';
@@ -24,7 +23,6 @@ interface Campus3DViewProps {
   mapOverlay?: CampusOverlay;
 }
 
-// Centered on Fujian University of Technology
 const CAMPUS_CENTER_DESTINATION = Cartesian3.fromDegrees(119.1956, 26.0312, 1200);
 
 const getColorForVacancy = (vacancy: number) => {
@@ -35,9 +33,12 @@ const getColorForVacancy = (vacancy: number) => {
 
 const getColorForDensity = (density: string) => {
   switch (density) {
-    case 'High': return Color.BLUE.withAlpha(0.85);
-    case 'Medium': return Color.CYAN.withAlpha(0.85);
-    default: return Color.GRAY.withAlpha(0.85);
+    case 'High':
+      return Color.BLUE.withAlpha(0.85);
+    case 'Medium':
+      return Color.CYAN.withAlpha(0.85);
+    default:
+      return Color.GRAY.withAlpha(0.85);
   }
 };
 
@@ -54,6 +55,8 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, mapOverla
   const tilesetRef = useRef<Cesium3DTileset | null>(null);
   const dataSourceRef = useRef<GeoJsonDataSource | null>(null);
   const clickHandlerRef = useRef<ScreenSpaceEventHandler | null>(null);
+
+  const selectedEntityIdRef = useRef<string | null>(null);
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
 
   const highlightColor = Color.YELLOW.withAlpha(0.9);
@@ -62,19 +65,24 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, mapOverla
 
   const getOverlayColor = (entity: any, overlay: CampusOverlay) => {
     if (overlay === 'none') return defaultColor;
+
     const props: any = entity?.properties;
+
     if (overlay === 'vacancy') {
       const vacancy = Number(props?.vacancy?.getValue?.() ?? props?.vacancy ?? 0);
       return getColorForVacancy(vacancy);
     }
+
     if (overlay === 'density') {
       const density = String(props?.density?.getValue?.() ?? props?.density ?? 'Low');
       return getColorForDensity(density);
     }
+
     if (overlay === 'excess') {
       const excess = Number(props?.excess?.getValue?.() ?? props?.excess ?? 0);
       return getColorForExcess(excess);
     }
+
     return defaultColor;
   };
 
@@ -99,10 +107,45 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, mapOverla
       e.polygon.material = getOverlayColor(e, overlay) as any;
     }
 
-    if (selectedEntityId) {
-      const current: any = ds.entities.getById(selectedEntityId);
+    const currentSelected = selectedEntityIdRef.current;
+    if (currentSelected) {
+      const current: any = ds.entities.getById(currentSelected);
       if (current?.polygon) current.polygon.material = highlightColor as any;
     }
+  };
+
+  const clearSelection = () => {
+    const ds = dataSourceRef.current;
+    if (!ds) return;
+
+    const prevId = selectedEntityIdRef.current;
+    if (!prevId) return;
+
+    const prev: any = ds.entities.getById(prevId);
+    if (prev?.polygon) prev.polygon.material = getOverlayColor(prev, mapOverlayRef.current) as any;
+
+    selectedEntityIdRef.current = null;
+    setSelectedEntityId(null);
+  };
+
+  const setSelected = (id: string, pickedId: any) => {
+    const ds = dataSourceRef.current;
+    if (!ds) return;
+
+    const prevId = selectedEntityIdRef.current;
+    if (prevId && prevId !== id) {
+      const prev: any = ds.entities.getById(prevId);
+      if (prev?.polygon) prev.polygon.material = getOverlayColor(prev, mapOverlayRef.current) as any;
+    }
+
+    const current: any = ds.entities.getById(id);
+    if (current?.polygon) current.polygon.material = highlightColor as any;
+
+    selectedEntityIdRef.current = id;
+    setSelectedEntityId(id);
+
+    const name = pickedId?.name ?? pickedId?.properties?.name?.getValue?.() ?? '建筑物';
+    onBuildingSelect?.({ id, name });
   };
 
   useEffect(() => {
@@ -139,12 +182,10 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, mapOverla
 
     const initScene = async () => {
       try {
-        // Load Google Photorealistic 3D Tiles
         const tileset = await Cesium3DTileset.fromIonAssetId(2275207);
         tilesetRef.current = tileset;
         viewer!.scene.primitives.add(tileset);
 
-        // Fly to campus location
         viewer!.camera.flyTo({
           destination: CAMPUS_CENTER_DESTINATION,
           orientation: {
@@ -155,7 +196,6 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, mapOverla
           duration: 1.5
         });
 
-        // Load custom GeoJSON buildings
         const dataSource = await GeoJsonDataSource.load('/map/multipolygons.geojson', { clampToGround: false });
         dataSourceRef.current = dataSource;
         await viewer!.dataSources.add(dataSource);
@@ -187,7 +227,14 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, mapOverla
           const amenity = String(p?.amenity?.getValue?.() ?? '');
           const otherTags = String(p?.other_tags?.getValue?.() ?? '');
           const buildingType = String(p?.building?.getValue?.() ?? p?.building ?? '');
-          const isParkingShed = amenity === 'bicycle_parking' || buildingType === 'roof' || otherTags.includes('bicycle_parking"=>"shed"') || name.includes('停车') || name.includes('车棚') || name.includes('停车蓬') || name.toLowerCase().includes('shed');
+          const isParkingShed =
+            amenity === 'bicycle_parking' ||
+            buildingType === 'roof' ||
+            otherTags.includes('bicycle_parking"=>"shed"') ||
+            name.includes('停车') ||
+            name.includes('车棚') ||
+            name.includes('停车蓬') ||
+            name.toLowerCase().includes('shed');
 
           if (isParkingShed || !isBuilding) {
             e.show = false;
@@ -196,7 +243,7 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, mapOverla
 
           const rawLevels = p?.['building:levels']?.getValue?.();
           const levels = Number(rawLevels);
-          const heightMeters = Number.isFinite(levels) && levels > 0 ? levels * 3.2 : 18;
+          const heightMeters = Number.isFinite(levels) && levels > 0 ? levels * 4.5 : 35;
 
           if (!p?.vacancy) (e.properties as any).vacancy = Math.random() * 0.35;
           if (!p?.density) {
@@ -225,28 +272,26 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, mapOverla
         handler.setInputAction((movement: any) => {
           const picked = viewer!.scene.pick(movement.position);
           const pickedId: any = (picked as any)?.id;
-          if (!pickedId) return;
 
-          const id = (pickedId.id as string) ?? null;
-          if (!id) return;
-
-          const ds = dataSourceRef.current;
-          if (!ds) return;
-
-          if (selectedEntityId) {
-            const prev: any = ds.entities.getById(selectedEntityId);
-            if (prev?.polygon) prev.polygon.material = getOverlayColor(prev, mapOverlayRef.current) as any;
+          if (!pickedId) {
+            clearSelection();
+            return;
           }
 
-          const current: any = ds.entities.getById(id);
-          if (current?.polygon) current.polygon.material = highlightColor as any;
+          const id = (pickedId.id as string) ?? null;
+          if (!id) {
+            clearSelection();
+            return;
+          }
 
-          setSelectedEntityId(id);
+          const currentSelected = selectedEntityIdRef.current;
+          if (currentSelected && id === currentSelected) {
+            clearSelection();
+            return;
+          }
 
-          const name = pickedId?.name ?? pickedId?.properties?.name?.getValue?.() ?? '建筑物';
-          onBuildingSelect?.({ id, name });
+          setSelected(id, pickedId);
         }, ScreenSpaceEventType.LEFT_CLICK);
-
       } catch (error) {
         console.error('Failed to load scene assets:', error);
       }
@@ -268,10 +313,12 @@ const Campus3DView: React.FC<Campus3DViewProps> = ({ onBuildingSelect, mapOverla
       } catch (e) {
         console.error('Error during Cesium cleanup:', e);
       }
+
       clickHandlerRef.current = null;
       tilesetRef.current = null;
       viewerRef.current = null;
       dataSourceRef.current = null;
+      selectedEntityIdRef.current = null;
     };
   }, []);
 
