@@ -1047,7 +1047,7 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-lg w-full max-w-2xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="p-6 border-b border-[#dee0e3] flex justify-between items-center flex-shrink-0">
           <h3 className="text-lg font-bold text-[#1f2329]">{mode === 'edit' ? '编辑工程项目' : '录入新基建工程'}</h3>
@@ -1721,7 +1721,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-lg w-full max-w-4xl shadow-xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="p-6 border-b border-[#dee0e3] flex justify-between items-start flex-shrink-0">
