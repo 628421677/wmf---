@@ -116,14 +116,25 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
   }, [projects, searchTerm, statusFilter, fundSourceFilter]);
 
   // 统计数据
-  const stats = useMemo(() => ({
-    pending: projects.filter(p => p.status === AssetStatus.PendingReview).length,
-    constructionAmount: projects
-      .filter(p => p.status !== AssetStatus.Archived)
-      .reduce((acc, p) => acc + p.contractAmount, 0),
-    completed: projects.filter(p => p.status === AssetStatus.Archived).length,
-    overdue: projects.filter(p => p.isOverdue).length,
-  }), [projects]);
+  const stats = useMemo(() => {
+    const archivedCount = projects
+      .map(p => ({ ...p, status: normalizeAssetStatus((p as any).status) }))
+      .filter(p => p.status === AssetStatus.Archived)
+      .length;
+
+    return {
+      pending: projects
+        .map(p => ({ ...p, status: normalizeAssetStatus((p as any).status) }))
+        .filter(p => p.status === AssetStatus.PendingReview)
+        .length,
+      constructionAmount: projects
+        .map(p => ({ ...p, status: normalizeAssetStatus((p as any).status) }))
+        .filter(p => p.status !== AssetStatus.Archived)
+        .reduce((acc, p) => acc + p.contractAmount, 0),
+      completed: archivedCount,
+      overdue: projects.filter(p => p.isOverdue).length,
+    };
+  }, [projects]);
 
   // 审计日志辅助函数
   const logAudit = (action: AuditLog['action'], entityType: AuditLog['entityType'], entityId: string, entityName: string, changedFields?: Record<string, { old: any; new: any }>) => {
@@ -379,7 +390,7 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-[#1f2329]">资产转固与管理</h2>
-          <p className="text-[#646a73]">全流程管理：立项 → 建设 → 竣工验收 → 审计决算 → 财务核算 → 转固入账</p>
+          <p className="text-[#646a73]">系统流程：待处置 → 待审核 → 待归档 → 已归档</p>
         </div>
         {userRole === UserRole.AssetAdmin && (
           <div className="flex gap-3">
