@@ -237,6 +237,62 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
       allocatedAt: '2023-09-10',
       completedAt: '2023-09-15',
     },
+    {
+      id: 'CHG-005',
+      department: '人文艺术学院',
+      applicant: '陈主任',
+      fromBuildingName: '行政办公大楼',
+      fromRoomNo: 'B102',
+      fromArea: 50,
+      reason: '地下室库房潮湿，不利于作品保存，申请调整至干燥的地上储藏空间。',
+      status: 'Pending',
+      createdAt: '2023-11-20',
+    },
+    {
+      id: 'CHG-006',
+      department: '物理学院',
+      applicant: '赵教授',
+      fromBuildingName: '理科实验楼',
+      fromRoomNo: '203',
+      fromArea: 85,
+      reason: '仪器搬迁计划已批复，申请更换至同楼栋更大面积实验室以满足新设备安装。',
+      status: 'Approved',
+      createdAt: '2023-11-08',
+      approvedAt: '2023-11-09',
+    },
+    {
+      id: 'CHG-007',
+      department: '经济管理学院',
+      applicant: '刘院长',
+      fromBuildingName: '行政办公大楼',
+      fromRoomNo: '601',
+      fromArea: 100,
+      toBuildingName: '行政办公大楼',
+      toRoomNo: '502',
+      toArea: 60,
+      reason: '原研讨室与教学安排冲突，申请调整至更适合小班研讨的房间。',
+      status: 'Allocated',
+      createdAt: '2023-10-02',
+      approvedAt: '2023-10-05',
+      allocatedAt: '2023-10-10',
+    },
+    {
+      id: 'CHG-008',
+      department: '招生办',
+      applicant: '王老师',
+      fromBuildingName: '行政办公大楼',
+      fromRoomNo: '503',
+      fromArea: 35,
+      toBuildingName: '行政办公大楼',
+      toRoomNo: '501',
+      toArea: 45,
+      reason: '招生宣传季结束，办公人员减少，调整到更小但更集中办公区。',
+      status: 'Completed',
+      createdAt: '2023-08-15',
+      approvedAt: '2023-08-18',
+      allocatedAt: '2023-08-20',
+      completedAt: '2023-08-25',
+    },
   ]);
   const [temporaryBorrows] = useState<TemporaryBorrow[]>(MOCK_TEMPORARY_BORROWS);
 
@@ -269,9 +325,11 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [isAllocateModalOpen, setIsAllocateModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [isAdjustmentAllocateModalOpen, setIsAdjustmentAllocateModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ExtendedRoomRequest | null>(null);
   const [detailRequest, setDetailRequest] = useState<ExtendedRoomRequest | null>(null);
+  const [selectedAdjustment, setSelectedAdjustment] = useState<RoomAdjustmentRequest | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [selectedRoomsForAllocation, setSelectedRoomsForAllocation] = useState<string[]>([]);
   const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
@@ -501,6 +559,71 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
   };
 
   // 配房操作（基于申请）
+
+  // 用房调整：打开配房弹窗（与“用房审批”的配房逻辑一致）
+  const openAdjustmentAllocate = (req: RoomAdjustmentRequest) => {
+    setSelectedAdjustment(req);
+    setSelectedRoomsForAllocation([]);
+    setIsAdjustmentAllocateModalOpen(true);
+  };
+
+  // 用房调整：执行配房（选择房源 -> 更新状态 -> 写入调配记录）
+  const handleAllocateAdjustment = () => {
+    if (!selectedAdjustment || selectedRoomsForAllocation.length === 0) return;
+
+    const now = new Date();
+    const effectiveDate = now.toISOString().split('T')[0];
+
+    // 更新调整单状态与目标房间
+    const firstRoomId = selectedRoomsForAllocation[0];
+    const firstRoom = availableRooms.find(r => r.id === firstRoomId);
+
+    setReturnRequests(prev => prev.map(r => r.id === selectedAdjustment.id ? {
+      ...r,
+      status: 'Allocated',
+      toBuildingName: firstRoom?.buildingName,
+      toRoomNo: firstRoom?.roomNo,
+      toArea: firstRoom?.area,
+      allocatedAt: effectiveDate,
+    } : r));
+
+    // 更新房源状态：新房间占用（演示：不自动释放原房间，因为原房间未纳入 availableRooms）
+    setAvailableRooms(prev => prev.map(room =>
+      selectedRoomsForAllocation.includes(room.id)
+        ? { ...room, availability: RoomAvailability.Occupied }
+        : room
+    ));
+
+    // 写入调配记录：用 Adjust 类型
+    const newRecords: AllocationRecord[] = selectedRoomsForAllocation.map(roomId => {
+      const room = availableRooms.find(r => r.id === roomId);
+      return {
+        id: `ADJ-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+        requestId: selectedAdjustment.id,
+        roomId,
+        roomNo: room?.roomNo || roomId,
+        buildingName: room?.buildingName || '-',
+        area: room?.area || 0,
+        fromDepartment: selectedAdjustment.department,
+        toDepartment: selectedAdjustment.department,
+        allocationType: 'Adjust',
+        effectiveDate,
+        operator: '当前用户',
+        notes: `用房调整（换房）：${selectedAdjustment.fromBuildingName}${selectedAdjustment.fromRoomNo} → ${(room?.buildingName || '-')}${(room?.roomNo || '-')}`,
+      };
+    });
+
+    setAllocationRecords(prev => [...newRecords, ...prev]);
+
+    const msg = `已为 ${selectedAdjustment.department} 完成用房调整配房：${newRecords.map(r => `${r.buildingName}${r.roomNo}`).join('、')}`;
+    setNotificationLogs(prev => [{ id: `NTF-${Date.now()}`, type: 'AdjustAllocate', target: selectedAdjustment.department, content: msg, sentAt: now.toISOString() }, ...prev]);
+    alert(msg);
+
+    setIsAdjustmentAllocateModalOpen(false);
+    setSelectedAdjustment(null);
+    setSelectedRoomsForAllocation([]);
+  };
+
   const handleAllocate = () => {
     if (!selectedRequest || selectedRoomsForAllocation.length === 0) return;
 
@@ -809,7 +932,7 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
   const tabs: { id: TabType; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'requests', label: '用房审批', icon: <FileText size={16} />, badge: stats.pendingApproval },
     { id: 'allocation', label: '房源分配', icon: <Home size={16} />, badge: stats.availableRooms },
-    { id: 'returns', label: '用房调整', icon: <ArrowLeftRight size={16} />, badge: stats.pendingReturns }
+    { id: 'returns', label: '用房调整', icon: <ArrowLeftRight size={16} />, badge: stats.pendingReturns },
     { id: 'history', label: '调配记录', icon: <History size={16} /> },
     { id: 'analytics', label: '数据分析', icon: <BarChart3 size={16} /> },
   ];
@@ -1242,7 +1365,7 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
                         )}
                         {userRole === UserRole.AssetAdmin && ret.status === 'Approved' && (
                           <button
-                            onClick={() => handleCompleteReturn(ret)}
+                            onClick={() => openAdjustmentAllocate(ret)}
                             className="text-xs px-3 py-1 bg-[#3370ff] text-white rounded hover:bg-[#285cc9]"
                           >
                             配房
@@ -1471,6 +1594,86 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
       </div>
 
       {/* ========== 模态框 ========== */}
+
+      {/* 用房调整-配房弹窗 */}
+      {isAdjustmentAllocateModalOpen && selectedAdjustment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => { setIsAdjustmentAllocateModalOpen(false); setSelectedAdjustment(null); }}>
+          <div className="bg-white rounded-lg w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-4 border-b border-[#dee0e3] flex justify-between items-center">
+              <div>
+                <h3 className="font-medium text-lg">用房调整 - 配房</h3>
+                <p className="text-xs text-[#8f959e] mt-1">{selectedAdjustment.department} · {selectedAdjustment.id}</p>
+              </div>
+              <button onClick={() => { setIsAdjustmentAllocateModalOpen(false); setSelectedAdjustment(null); }} className="text-[#8f959e] hover:text-[#1f2329]">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              <div className="p-3 rounded border border-[#dee0e3] bg-[#fcfcfd] text-sm">
+                <div className="text-[#646a73]">调整前：{selectedAdjustment.fromBuildingName} {selectedAdjustment.fromRoomNo}（{selectedAdjustment.fromArea}m²）</div>
+                <div className="text-[#646a73] mt-1">原因：{selectedAdjustment.reason}</div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium text-[#1f2329]">选择可用房源</h4>
+                  <span className="text-xs text-[#8f959e]">已选 {selectedRoomsForAllocation.length} 间</span>
+                </div>
+
+                <div className="divide-y border border-[#dee0e3] rounded">
+                  {availableRooms.filter(r => r.availability === RoomAvailability.Available).slice(0, 20).map(room => {
+                    const checked = selectedRoomsForAllocation.includes(room.id);
+                    return (
+                      <label key={room.id} className="flex items-center gap-3 p-3 hover:bg-[#f9fafb] cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedRoomsForAllocation(prev => [...prev, room.id]);
+                            } else {
+                              setSelectedRoomsForAllocation(prev => prev.filter(x => x !== room.id));
+                            }
+                          }}
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-[#1f2329]">{room.buildingName} {room.roomNo}</div>
+                          <div className="text-xs text-[#8f959e]">{room.area}m² · {getUseTypeLabel(room.useType)} · {room.floor > 0 ? `${room.floor}F` : `B${Math.abs(room.floor)}`}</div>
+                        </div>
+                        <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700">可分配</span>
+                      </label>
+                    );
+                  })}
+
+                  {availableRooms.filter(r => r.availability === RoomAvailability.Available).length === 0 && (
+                    <div className="p-6 text-center text-[#8f959e]">暂无可分配房源</div>
+                  )}
+                </div>
+
+                <div className="text-xs text-[#8f959e] mt-2">说明：这里复用“用房审批”配房弹窗的核心交互（选择房源并生成调配记录）。</div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-[#dee0e3] flex justify-end gap-3">
+              <button
+                onClick={() => { setIsAdjustmentAllocateModalOpen(false); setSelectedAdjustment(null); }}
+                className="px-4 py-2 border border-[#dee0e3] rounded-md text-sm hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleAllocateAdjustment}
+                disabled={selectedRoomsForAllocation.length === 0}
+                className="px-4 py-2 bg-[#3370ff] text-white rounded-md text-sm hover:bg-[#285cc9] disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                确认配房
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* 房源编辑/分配弹窗 */}
       {isRoomModalOpen && editingRoom && (
