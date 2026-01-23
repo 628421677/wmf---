@@ -693,6 +693,19 @@ const CommercialHousingOverview: React.FC<CommercialHousingOverviewProps> = ({ s
   }, []);
 
   useEffect(() => {
+    // 同步房源新增：当 spaces/contracts/rentBills 派生结果变化时，把“新出现的房间”补进表格
+    // 规则：
+    // - 以 roomId(=space.id) 作为唯一键
+    // - 已存在的行不覆盖（避免覆盖用户在表格里的手工编辑）
+    setRows(prev => {
+      const existingIds = new Set(prev.map(r => r.roomId));
+      const additions = derivedRows.filter(r => !existingIds.has(r.roomId));
+      if (additions.length === 0) return prev;
+      return [...additions, ...prev];
+    });
+  }, [derivedRows]);
+
+  useEffect(() => {
     saveRowsToCookie(rows);
   }, [rows]);
 
