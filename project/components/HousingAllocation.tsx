@@ -86,6 +86,26 @@ const ProgressBar: React.FC<{ value: number; max: number; color?: string }> = ({
 
 type TabType = 'requests' | 'allocation' | 'returns' | 'history' | 'analytics';
 
+type RoomAdjustmentRequestStatus = 'Pending' | 'Approved' | 'Allocated' | 'Completed';
+
+type RoomAdjustmentRequest = {
+  id: string;
+  department: string;
+  applicant: string;
+  fromBuildingName: string;
+  fromRoomNo: string;
+  fromArea: number;
+  toBuildingName?: string;
+  toRoomNo?: string;
+  toArea?: number;
+  reason: string;
+  status: RoomAdjustmentRequestStatus;
+  createdAt: string;
+  approvedAt?: string;
+  allocatedAt?: string;
+  completedAt?: string;
+};
+
 const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
   // 数据状态
   const [requests, setRequests] = useLocalStorage<ExtendedRoomRequest[]>('housing-requests-v2', MOCK_EXTENDED_REQUESTS);
@@ -160,7 +180,64 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
     return typeof area === 'number' && !Number.isNaN(area) ? area : 0;
   };
   const [allocationRecords, setAllocationRecords] = useLocalStorage<AllocationRecord[]>('allocation-records-v2', MOCK_ALLOCATION_RECORDS);
-  const [returnRequests, setReturnRequests] = useLocalStorage<RoomReturnRequest[]>('return-requests', MOCK_RETURN_REQUESTS);
+  const [returnRequests, setReturnRequests] = useLocalStorage<RoomAdjustmentRequest[]>('room-adjustment-requests-v1', [
+    {
+      id: 'CHG-001',
+      department: '计算机科学与技术学院',
+      applicant: '张老师',
+      fromBuildingName: '行政办公大楼',
+      fromRoomNo: '503',
+      fromArea: 35,
+      reason: '现办公室与实验室距离过远，申请调整至更靠近实验楼的办公室。',
+      status: 'Pending',
+      createdAt: '2023-11-18',
+    },
+    {
+      id: 'CHG-002',
+      department: '机械工程学院',
+      applicant: '李副院长',
+      fromBuildingName: '机械工程实验楼',
+      fromRoomNo: '402',
+      fromArea: 90,
+      reason: '现有实验室需改造为共享平台，申请换至同楼层相近面积房间。',
+      status: 'Approved',
+      createdAt: '2023-11-10',
+      approvedAt: '2023-11-12',
+    },
+    {
+      id: 'CHG-003',
+      department: '化学学院',
+      applicant: '周老师',
+      fromBuildingName: '理科实验楼',
+      fromRoomNo: '207',
+      fromArea: 40,
+      toBuildingName: '理科实验楼',
+      toRoomNo: '203',
+      toArea: 45,
+      reason: '人员增加，原办公室面积不足，申请换至更大房间。',
+      status: 'Allocated',
+      createdAt: '2023-11-15',
+      approvedAt: '2023-11-16',
+      allocatedAt: '2023-11-20',
+    },
+    {
+      id: 'CHG-004',
+      department: '教务处',
+      applicant: '孙处长',
+      fromBuildingName: '行政办公大楼',
+      fromRoomNo: '502',
+      fromArea: 60,
+      toBuildingName: '行政办公大楼',
+      toRoomNo: '501',
+      toArea: 45,
+      reason: '部门组织架构调整，申请换房并完成资产交接。',
+      status: 'Completed',
+      createdAt: '2023-09-01',
+      approvedAt: '2023-09-05',
+      allocatedAt: '2023-09-10',
+      completedAt: '2023-09-15',
+    },
+  ]);
   const [temporaryBorrows] = useState<TemporaryBorrow[]>(MOCK_TEMPORARY_BORROWS);
 
   // UI 状态
@@ -732,7 +809,7 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
   const tabs: { id: TabType; label: string; icon: React.ReactNode; badge?: number }[] = [
     { id: 'requests', label: '用房审批', icon: <FileText size={16} />, badge: stats.pendingApproval },
     { id: 'allocation', label: '房源分配', icon: <Home size={16} />, badge: stats.availableRooms },
-    { id: 'returns', label: '退房管理', icon: <RotateCcw size={16} />, badge: stats.pendingReturns },
+    { id: 'returns', label: '用房调整', icon: <ArrowLeftRight size={16} />, badge: stats.pendingReturns }
     { id: 'history', label: '调配记录', icon: <History size={16} /> },
     { id: 'analytics', label: '数据分析', icon: <BarChart3 size={16} /> },
   ];
@@ -743,7 +820,7 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
       <div className="flex justify-between items-start">
         <div>
           <h2 className="text-2xl font-bold text-[#1f2329]">公用房归口调配管理</h2>
-          <p className="text-[#646a73]">房源库存管理、定额核算、分级审批、可视化配房、退房管理全流程</p>
+          <p className="text-[#646a73]">房源库存管理、定额核算、分级审批、可视化配房、用房调整全流程</p>
         </div>
         {(userRole === UserRole.CollegeAdmin || userRole === UserRole.Teacher) && (
           <div className="flex gap-2">
@@ -1113,11 +1190,11 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
           </div>
         )}
 
-        {/* ========== 退房管理 Tab ========== */}
+        {/* ========== 用房调整 Tab ========== */}
         {activeTab === 'returns' && (
           <div>
             <div className="p-4 border-b border-[#dee0e3] bg-[#fcfcfd]">
-              <h3 className="font-medium text-[#1f2329]">退房申请列表</h3>
+              <h3 className="font-medium text-[#1f2329]">用房调整申请列表</h3>
             </div>
             <div className="divide-y divide-[#dee0e3]">
               {returnRequests.length === 0 ? (
@@ -1132,22 +1209,28 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
                           <span className="text-xs text-[#8f959e]">{ret.id}</span>
                         </div>
                         <p className="text-sm text-[#646a73] mb-2">
-                          退还房间: {ret.buildingName} {ret.roomNo} ({ret.area}m²)
+                          调整前: {ret.fromBuildingName} {ret.fromRoomNo} ({ret.fromArea}m²)
+                          {ret.toBuildingName && ret.toRoomNo && ret.toArea !== undefined ? (
+                            <>
+                              <span className="mx-2 text-[#dee0e3]">→</span>
+                              调整后: {ret.toBuildingName} {ret.toRoomNo} ({ret.toArea}m²)
+                            </>
+                          ) : null}
                         </p>
                         <p className="text-sm text-[#646a73] mb-2">原因: {ret.reason}</p>
                         <div className="flex items-center gap-4 text-xs text-[#8f959e]">
                           <span>申请人: {ret.applicant}</span>
                           <span>申请日期: {ret.createdAt}</span>
-                          <span>预计退还: {ret.expectedReturnDate}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className={`text-xs px-2 py-1 rounded ${
                           ret.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
                           ret.status === 'Approved' ? 'bg-blue-100 text-blue-700' :
-                          'bg-green-100 text-green-700'
+                          ret.status === 'Allocated' ? 'bg-green-100 text-green-700' :
+                          'bg-gray-100 text-gray-700'
                         }`}>
-                          {ret.status === 'Pending' ? '待审批' : ret.status === 'Approved' ? '已批准' : '已完成'}
+                          {ret.status === 'Pending' ? '待审批' : ret.status === 'Approved' ? '已批准' : ret.status === 'Allocated' ? '已配房' : '已完成'}
                         </span>
                         {userRole === UserRole.AssetAdmin && ret.status === 'Pending' && (
                           <button
@@ -1162,7 +1245,17 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
                             onClick={() => handleCompleteReturn(ret)}
                             className="text-xs px-3 py-1 bg-[#3370ff] text-white rounded hover:bg-[#285cc9]"
                           >
-                            确认退还
+                            配房
+                          </button>
+                        )}
+                        {userRole === UserRole.AssetAdmin && ret.status === 'Allocated' && (
+                          <button
+                            onClick={() => {
+                              setReturnRequests(prev => prev.map(x => x.id === ret.id ? { ...x, status: 'Completed', completedAt: new Date().toISOString().split('T')[0] } : x));
+                            }}
+                            className="text-xs px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                          >
+                            完成
                           </button>
                         )}
                       </div>
