@@ -1134,6 +1134,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
         space={viewingBidsForSpace}
         onClose={() => setViewingBidsForSpace(null)}
         onConfirmWinner={handleConfirmBidWinner}
+        readOnly={contracts.some(c => c.spaceId === (viewingBidsForSpace?.id || ''))}
       />
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
@@ -1297,7 +1298,8 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                             setEditingSpace(space);
                             setShowAddSpace(true);
                           }}
-                          className="flex-1 text-xs py-1.5 border border-[#dee0e3] rounded hover:bg-gray-50"
+                          disabled={displayStatus === '已出租'}
+                          className={`flex-1 text-xs py-1.5 border rounded ${displayStatus === '已出租' ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed' : 'border-[#dee0e3] hover:bg-gray-50'}`}
                         >
                           编辑
                         </button>
@@ -1310,7 +1312,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                           }}
                           className="flex-1 text-xs py-1.5 border border-[#dee0e3] rounded hover:bg-gray-50"
                         >
-                          查看竞标 ({space.bids.length})
+                          {displayStatus === '已出租' ? `查看竞标(只读) (${space.bids.length})` : `查看竞标 (${space.bids.length})`}
                         </button>
                       </div>
                     )}

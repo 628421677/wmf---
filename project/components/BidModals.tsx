@@ -18,6 +18,7 @@ interface BidListModalProps {
   space: SpaceItem | null;
   onClose: () => void;
   onConfirmWinner: (bid: BidItem) => void;
+  readOnly?: boolean;
 }
 
 const statusLabel = (s: BidItem['status']) => {
@@ -33,7 +34,7 @@ const statusLabel = (s: BidItem['status']) => {
   }
 };
 
-export const BidListModal: React.FC<BidListModalProps> = ({ isOpen, space, onClose, onConfirmWinner }) => {
+export const BidListModal: React.FC<BidListModalProps> = ({ isOpen, space, onClose, onConfirmWinner, readOnly }) => {
   const bids = useMemo(() => space?.bids ?? [], [space]);
 
   if (!isOpen || !space) return null;
@@ -105,6 +106,8 @@ export const BidListModal: React.FC<BidListModalProps> = ({ isOpen, space, onClo
                       <td className="px-4 py-3 text-center">
                         {isWinner ? (
                           <span className="text-xs text-green-600">已中标</span>
+                        ) : readOnly ? (
+                          <span className="text-xs text-[#8f959e]">已出租不可中标</span>
                         ) : (
                           <button
                             onClick={() => onConfirmWinner(bid)}

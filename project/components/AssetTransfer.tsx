@@ -127,12 +127,12 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
         .map(p => ({ ...p, status: normalizeAssetStatus((p as any).status) }))
         .filter(p => p.status === AssetStatus.PendingReview)
         .length,
-      constructionAmount: projects
+    constructionAmount: projects
         .map(p => ({ ...p, status: normalizeAssetStatus((p as any).status) }))
-        .filter(p => p.status !== AssetStatus.Archived)
-        .reduce((acc, p) => acc + p.contractAmount, 0),
+      .filter(p => p.status !== AssetStatus.Archived)
+      .reduce((acc, p) => acc + p.contractAmount, 0),
       completed: archivedCount,
-      overdue: projects.filter(p => p.isOverdue).length,
+    overdue: projects.filter(p => p.isOverdue).length,
     };
   }, [projects]);
 
