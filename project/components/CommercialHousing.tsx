@@ -505,6 +505,18 @@ interface CommercialHousingProps {
 type CommercialTab = 'overview' | 'spaces' | 'contracts' | 'rent' | 'analytics';
 type ApartmentTab = 'overview' | 'applications' | 'rooms' | 'utilities' | 'deposits';
 
+const parseSpaceKeyFromName = (name: string) => {
+  const m = String(name || '').trim().match(/^(.+?)层\s+(\d+)\s+/);
+  return { floor: m?.[1]?.trim() || '', roomNo: m?.[2]?.trim() || '' };
+};
+
+const isDuplicateSpaceKey = (a: string, b: string) => {
+  const ka = parseSpaceKeyFromName(a);
+  const kb = parseSpaceKeyFromName(b);
+  if (!ka.floor || !ka.roomNo || !kb.floor || !kb.roomNo) return false;
+  return ka.floor === kb.floor && ka.roomNo === kb.roomNo;
+};
+
 const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
   const [mainTab, setMainTab] = useState<'commercial' | 'apartment'>('commercial');
   const [commercialTab, setCommercialTab] = useState<CommercialTab>('overview');
@@ -522,6 +534,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
 
   // UI状态
   const [showAddSpace, setShowAddSpace] = useState(false);
+  const [editingSpace, setEditingSpace] = useState<SpaceItem | null>(null);
   const [showRentPayment, setShowRentPayment] = useState(false);
   const [showContractDetail, setShowContractDetail] = useState(false);
   const [showContractUpsert, setShowContractUpsert] = useState(false);
@@ -1238,7 +1251,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
               <div className="p-4 border-b border-[#dee0e3] flex justify-between items-center">
                 <span className="text-sm text-[#646a73]">共 {spaces.length} 处房源</span>
                 {isAssetAdmin && (
-                  <button onClick={() => setShowAddSpace(true)} className="flex items-center gap-1 text-sm font-medium bg-[#3370ff] hover:bg-[#285cc9] text-white px-3 py-1.5 rounded">
+                  <button onClick={() => { setEditingSpace(null); setShowAddSpace(true); }} className="flex items-center gap-1 text-sm font-medium bg-[#3370ff] hover:bg-[#285cc9] text-white px-3 py-1.5 rounded">
                     <Plus size={16} /> 发布房源
                   </button>
                 )}
@@ -1277,8 +1290,17 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
                         <span>{space.bids.length} 条</span>
                       </div>
                     </div>
-                    {isAssetAdmin && displayStatus === '公开招租' && (
+                    {isAssetAdmin && (
                       <div className="mt-3 pt-3 border-t border-[#dee0e3] flex gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingSpace(space);
+                            setShowAddSpace(true);
+                          }}
+                          className="flex-1 text-xs py-1.5 border border-[#dee0e3] rounded hover:bg-gray-50"
+                        >
+                          编辑
+                        </button>
                         <button
                           onClick={() => {
                             // localStorage 里可能已有旧数据（bids 为空），导致弹窗显示“暂无竞标数据”
@@ -2212,18 +2234,36 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
 
       {/* 发布房源弹窗 */}
       {showAddSpace && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowAddSpace(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => { setShowAddSpace(false); setEditingSpace(null); }}>
           <div className="bg-white w-full max-w-md rounded-lg shadow-lg" onClick={e => e.stopPropagation()}>
             <div className="p-6 border-b flex justify-between items-center">
-              <h3 className="font-semibold text-lg">发布房源</h3>
-              <button onClick={() => setShowAddSpace(false)}><X size={18} /></button>
+              <h3 className="font-semibold text-lg">{editingSpace ? '编辑房源' : '发布房源'}</h3>
+              <button onClick={() => { setShowAddSpace(false); setEditingSpace(null); }}><X size={18} /></button>
             </div>
             <AddSpaceForm
+              initial={editingSpace}
               onSubmit={(space) => {
-                setSpaces(prev => [...prev, { ...space, id: `SP-${Date.now()}`, bids: [], status: '公开招租' }]);
+                const exists = spaces.some(s => {
+                  if (editingSpace && s.id === editingSpace.id) return false;
+                  if (!(s.status === '公开招租' || s.status === '已出租')) return false;
+                  return isDuplicateSpaceKey(s.name, space.name);
+                });
+
+                if (exists) {
+                  alert('该房源（同楼层+同房号）已存在且处于“公开招租/已出租”状态，不能重复发布。');
+                  return;
+                }
+
+                if (editingSpace) {
+                  setSpaces(prev => prev.map(s => s.id === editingSpace.id ? { ...s, ...space, id: s.id, bids: s.bids, status: s.status } : s));
+                } else {
+                  setSpaces(prev => [...prev, { ...space, id: `SP-${Date.now()}`, bids: [], status: '公开招租' }]);
+                }
+
                 setShowAddSpace(false);
+                setEditingSpace(null);
               }}
-              onCancel={() => setShowAddSpace(false)}
+              onCancel={() => { setShowAddSpace(false); setEditingSpace(null); }}
             />
           </div>
         </div>
@@ -2503,14 +2543,21 @@ const ApartmentApplyForm: React.FC<{
 };
 
 const AddSpaceForm: React.FC<{
+  initial?: SpaceItem | null;
   onSubmit: (space: { name: string; area: number; monthlyRent: number }) => void;
   onCancel: () => void;
-}> = ({ onSubmit, onCancel }) => {
-  const [floor, setFloor] = useState('一');
-  const [roomNumber, setRoomNumber] = useState('101');
-  const [purpose, setPurpose] = useState('商铺');
-  const [area, setArea] = useState('');
-  const [monthlyRent, setMonthlyRent] = useState('');
+}> = ({ initial, onSubmit, onCancel }) => {
+  const initKey = parseSpaceKeyFromName(initial?.name || '');
+
+  const [floor, setFloor] = useState(initKey.floor || '一');
+  const [roomNumber, setRoomNumber] = useState(initKey.roomNo || '101');
+  const [purpose, setPurpose] = useState(() => {
+    const raw = String(initial?.name || '').trim();
+    const m = raw.match(/\d+\s+(.*)$/);
+    return (m?.[1]?.trim() || '商铺');
+  });
+  const [area, setArea] = useState(initial?.area ? String(initial.area) : '');
+  const [monthlyRent, setMonthlyRent] = useState(initial?.monthlyRent ? String(initial.monthlyRent) : '');
 
   const floorOptions = ['一', '二', '三', '四', '五', '六', '七'];
   const roomNumberOptions = Array.from({ length: 20 }, (_, i) => `${floorOptions.indexOf(floor) + 1}${String(i + 1).padStart(2, '0')}`);
