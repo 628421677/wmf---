@@ -73,7 +73,7 @@ export const ContractUpsertModal: React.FC<ContractUpsertModalProps> = ({
 
   if (!isOpen) return null;
 
-  const availableSpaces = spaces.filter(s => s.status === '公开招租' || s.id === editingContract?.spaceId);
+  const availableSpaces = spaces.filter(s => s.status === '公开招租' || s.status === '已出租' || s.id === editingContract?.spaceId);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in-fast">

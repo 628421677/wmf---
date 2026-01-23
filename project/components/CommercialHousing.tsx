@@ -13,6 +13,7 @@ import CommercialHousingOverview, { CreateFromOverviewPayload } from './Commerci
 import { ContractUpsertModal, DeleteConfirmationModal } from './ContractModals';
 import { BidListModal } from './BidModals';
 import type { BidItem } from './BidModals';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 // ==================== 数据类型定义 ====================
 
@@ -445,26 +446,6 @@ const initDeposits: DepositRecord[] = [
   { id: 'DEP-001', tenant: '王老师', roomNo: 'A栋101', depositAmount: 1600, paidDate: '2023-08-30', status: 'Held', deductions: [] },
 ];
 
-// ==================== localStorage Hook ====================
-
-function useLocalStorage<T>(key: string, initialValue: T) {
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    if (typeof window === 'undefined') return initialValue;
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch { return initialValue; }
-  });
-  const setValue = (value: T | ((val: T) => T)) => {
-    const valueToStore = value instanceof Function ? value(storedValue) : value;
-    setStoredValue(valueToStore);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    }
-  };
-  return [storedValue, setValue] as const;
-}
-
 // ==================== 统计卡片组件 ====================
 
 const StatCard: React.FC<{
@@ -539,6 +520,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
   const [showContractDetail, setShowContractDetail] = useState(false);
   const [showContractUpsert, setShowContractUpsert] = useState(false);
   const [editingContract, setEditingContract] = useState<ContractItem | null>(null);
+  const [isCreatingContractFromBid, setIsCreatingContractFromBid] = useState(false);
   const [deletingContract, setDeletingContract] = useState<ContractItem | null>(null);
   const [showApprovalDetail, setShowApprovalDetail] = useState(false);
   const [showUtilityReading, setShowUtilityReading] = useState(false);
@@ -554,6 +536,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
 
   const handleConfirmBidWinner = (bid: BidItem) => {
     if (!viewingBidsForSpace) return;
+    setIsCreatingContractFromBid(true);
 
     // 1) 竞标状态联动：当前中标，其他未中标
     setSpaces(prev => prev.map(s => {
@@ -732,8 +715,13 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
     status: ContractItem['status'];
     performanceRating?: number;
   }) => {
+    console.log('[CommercialHousing] handleUpsertContract submit', data);
     const space = spaces.find(s => s.id === data.spaceId);
-    if (!space) return;
+    if (!space) {
+      alert('保存失败：未找到关联房源，请重新选择“关联房源”后再保存');
+      console.warn('[CommercialHousing] save contract aborted: space not found', { spaceId: data.spaceId, spaces });
+      return;
+    }
 
     // 合同编号唯一性校验（编辑时排除自身）
     const conflict = contracts.find(c => c.contractNo === data.contractNo && c.id !== (editingContract?.id || ''));
@@ -742,7 +730,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
       return;
     }
 
-    if (editingContract) {
+    if (editingContract && !isCreatingContractFromBid) {
       setContracts(prev => prev.map(c => c.id === editingContract.id ? {
         ...c,
         contractNo: data.contractNo,
@@ -787,10 +775,22 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
         performanceRating: data.performanceRating,
       };
 
-      setContracts(prev => [...prev, newContract]);
+      setContracts(prev => {
+        const next = [...prev, newContract];
+        try {
+          console.log('[CommercialHousing] after setContracts, ls=', window.localStorage.getItem('commercial-contracts-v2'));
+        } catch {}
+        return next;
+      });
 
       // 房源状态联动：签合同后默认已出租
-      setSpaces(prev => prev.map(s => s.id === data.spaceId ? { ...s, status: '已出租', monthlyRent: data.rentPerMonth } : s));
+      setSpaces(prev => {
+        const next = prev.map(s => s.id === data.spaceId ? { ...s, status: '已出租', monthlyRent: data.rentPerMonth } : s);
+        try {
+          console.log('[CommercialHousing] after setSpaces, ls=', window.localStorage.getItem('commercial-spaces-v2'));
+        } catch {}
+        return next;
+      });
 
       // 可选：生成当月一笔待缴租金账单
       const ym = new Date().toISOString().slice(0, 7);
@@ -817,6 +817,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
 
     setShowContractUpsert(false);
     setEditingContract(null);
+    setIsCreatingContractFromBid(false);
   };
 
   const handleDeleteContract = (contract: ContractItem) => {
