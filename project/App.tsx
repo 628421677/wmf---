@@ -51,7 +51,13 @@ import ApartmentManagementRooms from './components/ApartmentManagementRooms';
 import ApartmentManagementUtilities from './components/ApartmentManagementUtilities';
 import ApartmentManagementDeposits from './components/ApartmentManagementDeposits';
 import InventoryCheckEnhanced from './components/InventoryCheckEnhanced';
-import PublicHouseComprehensiveQuery from './components/PublicHouseComprehensiveQuery';
+import PublicHouseQueryHome from './components/PublicHouseQueryHome';
+import PublicHouseOnePersonMultiRoomQuery from './components/PublicHouseOnePersonMultiRoomQuery';
+import PublicHouseOneRoomMultiPersonQuery from './components/PublicHouseOneRoomMultiPersonQuery';
+import PublicHouseDeptOverviewQuery from './components/PublicHouseDeptOverviewQuery';
+import PublicHouseQuotaQuery from './components/PublicHouseQuotaQuery';
+import PublicHouseRoomUsageQueryPage from './components/PublicHouseRoomUsageQueryPage';
+import PublicHouseCommercialQueryPage from './components/PublicHouseCommercialQueryPage';
 import BigScreen from './components/BigScreen';
 import Login from './components/Login';
 import MyTodos from './components/MyTodos'; // New Component
@@ -112,6 +118,13 @@ export type View =
   | 'maintenance-stats'
   | 'inventory'
   | 'public-house-query'
+  | 'public-house-home'
+  | 'public-house-one-person-multi-room'
+  | 'public-house-one-room-multi-person'
+  | 'public-house-dept-overview'
+  | 'public-house-quota'
+  | 'public-house-room-usage'
+  | 'public-house-commercial'
   | 'reports';
   
 
@@ -159,6 +172,13 @@ const viewToPath: Record<View, string> = {
   'maintenance-stats': '/hall/maintenance/stats',
   inventory: '/hall/inventory',
   'public-house-query': '/hall/public-house-query',
+  'public-house-home': '/hall/public-house-query/home',
+  'public-house-one-person-multi-room': '/hall/public-house-query/one-person-multi-room',
+  'public-house-one-room-multi-person': '/hall/public-house-query/one-room-multi-person',
+  'public-house-dept-overview': '/hall/public-house-query/dept-overview',
+  'public-house-quota': '/hall/public-house-query/quota',
+  'public-house-room-usage': '/hall/public-house-query/room-usage',
+  'public-house-commercial': '/hall/public-house-query/commercial',
   reports: '/hall/reports',
   rules: '/rules',
   'rules-quota': '/rules/quota',
@@ -188,7 +208,7 @@ const App: React.FC = () => {
   const [isRulesExpanded, setIsRulesExpanded] = useState(true);
 
   // Helper to determine active section
-  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'maintenance-home', 'maintenance-repair', 'maintenance-property', 'maintenance-stats', 'inventory', 'public-house-query', 'reports'].includes(currentView);
+  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'maintenance-home', 'maintenance-repair', 'maintenance-property', 'maintenance-stats', 'inventory', 'public-house-query', 'public-house-home', 'public-house-one-person-multi-room', 'public-house-one-room-multi-person', 'public-house-dept-overview', 'public-house-quota', 'public-house-room-usage', 'public-house-commercial', 'reports'].includes(currentView);
   const isHallSection = currentView === 'hall' || isHallModule;
   const isDigitalModule = ['digital-building', 'digital-room'].includes(currentView);
   const isDigitalSection = currentView === 'digital' || isDigitalModule;
@@ -296,7 +316,21 @@ const App: React.FC = () => {
       case 'inventory':
         return <InventoryCheckEnhanced />;
       case 'public-house-query':
-        return <PublicHouseComprehensiveQuery />;
+        return <Navigate to="/hall/public-house-query/home" replace />;
+      case 'public-house-home':
+        return <PublicHouseQueryHome onNavigate={setCurrentView} />;
+      case 'public-house-one-person-multi-room':
+        return <PublicHouseOnePersonMultiRoomQuery />;
+      case 'public-house-one-room-multi-person':
+        return <PublicHouseOneRoomMultiPersonQuery />;
+      case 'public-house-dept-overview':
+        return <PublicHouseDeptOverviewQuery />;
+      case 'public-house-quota':
+        return <PublicHouseQuotaQuery />;
+      case 'public-house-room-usage':
+        return <PublicHouseRoomUsageQueryPage />;
+      case 'public-house-commercial':
+        return <PublicHouseCommercialQueryPage />;
         
       default: return <Dashboard userRole={userRole} />;
     }
@@ -497,7 +531,19 @@ const App: React.FC = () => {
       ],
     },
     { id: 'inventory', label: '房产盘点核查', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
-    { id: 'public-house-query', label: '公房综合查询', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+    {
+      id: 'public-house-query',
+      label: '公房综合查询',
+      roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin],
+      children: [
+        { id: 'public-house-one-person-multi-room', label: '一人多房', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'public-house-one-room-multi-person', label: '一房多人', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'public-house-dept-overview', label: '部门概况', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'public-house-quota', label: '定额查询', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'public-house-room-usage', label: '公用房查询', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'public-house-commercial', label: '商用房查询', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+      ],
+    },
     { id: 'reports', label: '统计报表中心', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
   ];
 
@@ -572,6 +618,7 @@ const App: React.FC = () => {
                     item.id === 'commercial-mgmt' ? 'commercial-home' :
                     item.id === 'residence-mgmt' ? 'residence-home' :
                     item.id === 'maintenance' ? 'maintenance-home' :
+                    item.id === 'public-house-query' ? 'public-house-home' :
                     item.id;
                   const groupViews = [groupHomeView, ...item.children.map(c => c.id)];
                   const isGroupModule = groupViews.includes(currentView);

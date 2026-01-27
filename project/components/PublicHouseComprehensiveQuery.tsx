@@ -16,6 +16,13 @@ type TabDef = {
   icon: React.ComponentType<{ size?: number; className?: string }>;
 };
 
+interface PublicHouseComprehensiveQueryProps {
+  initialTab?: FeatureKey;
+  hideTabNav?: boolean;
+  pageTitle?: string;
+  pageSubtitle?: string;
+}
+
 const tabs: TabDef[] = [
   { key: 'onePersonMultiRoom', label: '一人多房', icon: Users },
   { key: 'oneRoomMultiPerson', label: '一房多人', icon: Home },
@@ -25,8 +32,13 @@ const tabs: TabDef[] = [
   { key: 'commercialQuery', label: '商用房查询', icon: Building2 },
 ];
 
-const PublicHouseComprehensiveQuery: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<FeatureKey>('onePersonMultiRoom');
+const PublicHouseComprehensiveQuery: React.FC<PublicHouseComprehensiveQueryProps> = ({
+  initialTab = 'onePersonMultiRoom',
+  hideTabNav = false,
+  pageTitle,
+  pageSubtitle,
+}) => {
+  const [activeTab, setActiveTab] = useState<FeatureKey>(initialTab);
   const [keyword, setKeyword] = useState('');
 
   const activeTabLabel = useMemo(() => tabs.find(t => t.key === activeTab)?.label ?? '', [activeTab]);
@@ -37,9 +49,9 @@ const PublicHouseComprehensiveQuery: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold text-[#1f2329] flex items-center gap-2">
             <Building2 size={24} className="text-[#3370ff]" />
-            公房综合查询
+            {pageTitle || '公房综合查询'}
           </h2>
-          <p className="text-[#646a73]">面向公用房多维度查询与统计分析（结构已搭建，可逐步接入接口与查询条件）。</p>
+          <p className="text-[#646a73]">{pageSubtitle || '面向公用房多维度查询与统计分析（结构已搭建，可逐步接入接口与查询条件）。'}</p>
         </div>
       </div>
 
