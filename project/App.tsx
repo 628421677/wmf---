@@ -15,6 +15,12 @@ import {
 import Dashboard from './components/Dashboard';
 import AssetTransfer from './components/AssetTransfer';
 import HousingAllocation from './components/HousingAllocation';
+import HousingAllocationApproval from './components/HousingAllocationApproval';
+import HousingAllocationResource from './components/HousingAllocationResource';
+import HousingAllocationAdjust from './components/HousingAllocationAdjust';
+import HousingAllocationRecords from './components/HousingAllocationRecords';
+import HousingAllocationAnalytics from './components/HousingAllocationAnalytics';
+import HousingAllocationHome from './components/HousingAllocationHome';
 import FeeManagement from './components/FeeManagement';
 import MaintenanceEnhanced from './components/MaintenanceEnhanced';
 import BusinessHall from './components/BusinessHall';
@@ -45,6 +51,12 @@ export type View =
   // Sub-modules of Hall
   | 'assets' 
   | 'allocation' 
+  | 'allocation-home'
+  | 'allocation-approval'
+  | 'allocation-resource'
+  | 'allocation-adjust'
+  | 'allocation-records'
+  | 'allocation-analytics'
   | 'fees' 
   | 'commercial' 
   | 'maintenance' 
@@ -59,6 +71,12 @@ const viewToPath: Record<View, string> = {
   hall: '/hall',
   assets: '/hall/assets',
   allocation: '/hall/allocation',
+  'allocation-home': '/hall/allocation/home',
+  'allocation-approval': '/hall/allocation/approval',
+  'allocation-resource': '/hall/allocation/resource',
+  'allocation-adjust': '/hall/allocation/adjust',
+  'allocation-records': '/hall/allocation/records',
+  'allocation-analytics': '/hall/allocation/analytics',
   fees: '/hall/fees',
   commercial: '/hall/commercial',
   maintenance: '/hall/maintenance',
@@ -93,7 +111,7 @@ const App: React.FC = () => {
   const [isRulesExpanded, setIsRulesExpanded] = useState(true);
 
   // Helper to determine active section
-  const isHallModule = ['assets', 'allocation', 'fees', 'commercial', 'maintenance', 'inventory', 'public-house-query', 'reports'].includes(currentView);
+  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'commercial', 'maintenance', 'inventory', 'public-house-query', 'reports'].includes(currentView);
   const isHallSection = currentView === 'hall' || isHallModule;
   const isDigitalModule = ['digital-building', 'digital-room'].includes(currentView);
   const isDigitalSection = currentView === 'digital' || isDigitalModule;
@@ -148,7 +166,13 @@ const App: React.FC = () => {
       
       // Hall Sub-modules with UserRole passed down
       case 'assets': return <AssetTransfer userRole={userRole} />;
-      case 'allocation': return <HousingAllocation userRole={userRole} />;
+      case 'allocation': return <Navigate to="/hall/allocation/home" replace />;
+      case 'allocation-home': return <HousingAllocationHome userRole={userRole} onNavigate={setCurrentView} />;
+      case 'allocation-approval': return <HousingAllocationApproval userRole={userRole} />;
+      case 'allocation-resource': return <HousingAllocationResource userRole={userRole} />;
+      case 'allocation-adjust': return <HousingAllocationAdjust userRole={userRole} />;
+      case 'allocation-records': return <HousingAllocationRecords userRole={userRole} />;
+      case 'allocation-analytics': return <HousingAllocationAnalytics userRole={userRole} />;
       case 'fees': return <FeeManagement userRole={userRole} />;
       case 'maintenance': return <MaintenanceEnhanced userRole={userRole} />;
       case 'reports': return <ReportCenterEnhanced userRole={userRole} />;
@@ -247,6 +271,12 @@ const App: React.FC = () => {
         // Hall Breadcrumbs
         case 'assets': return <>{hallCrumb} <span className="text-[#1f2329]"> / 资产转固与管理</span></>;
         case 'allocation': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公用房归口调配管理</span></>;
+        case 'allocation-home': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公用房归口调配管理</span></>;
+        case 'allocation-approval': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('allocation-home')}> / 公用房归口调配管理</span> <span className="text-[#1f2329]"> / 用房审批</span></>;
+        case 'allocation-resource': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('allocation-home')}> / 公用房归口调配管理</span> <span className="text-[#1f2329]"> / 房源分配</span></>;
+        case 'allocation-adjust': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('allocation-home')}> / 公用房归口调配管理</span> <span className="text-[#1f2329]"> / 用房调整</span></>;
+        case 'allocation-records': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('allocation-home')}> / 公用房归口调配管理</span> <span className="text-[#1f2329]"> / 调整记录</span></>;
+        case 'allocation-analytics': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('allocation-home')}> / 公用房归口调配管理</span> <span className="text-[#1f2329]"> / 数据分析</span></>;
         case 'fees': return <>{hallCrumb} <span className="text-[#1f2329]"> / 校内公用房使用收费管理</span></>;
         case 'commercial': return <>{hallCrumb} <span className="text-[#1f2329]"> / 经营性用房与周转房管理</span></>;
         case 'maintenance': return <>{hallCrumb} <span className="text-[#1f2329]"> / 维修与物业</span></>;
@@ -267,9 +297,29 @@ const App: React.FC = () => {
     }
   };
 
-  const hallSubMenus: { id: View; label: string; roles: UserRole[] }[] = [
+  type HallMenuItem = {
+    id: View;
+    label: string;
+    roles: UserRole[];
+    children?: { id: View; label: string; roles: UserRole[] }[];
+  };
+
+  const hallSubMenus: HallMenuItem[] = [
     { id: 'assets', label: '资产转固与管理', roles: [UserRole.AssetAdmin] },
-    { id: 'allocation', label: '公用房归口调配管理', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+
+    {
+      id: 'allocation',
+      label: '公用房归口调配管理',
+      roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin],
+      children: [
+        { id: 'allocation-approval', label: '用房审批', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'allocation-resource', label: '房源分配', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'allocation-adjust', label: '用房调整', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'allocation-records', label: '调整记录', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'allocation-analytics', label: '数据分析', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+      ],
+    },
+
     { id: 'fees', label: '校内公用房使用收费管理', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
     { id: 'commercial', label: '经营性用房与周转房管理', roles: [UserRole.AssetAdmin, UserRole.Teacher, UserRole.Guest] },
     { id: 'maintenance', label: '维修与物业', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin, UserRole.Teacher] },
@@ -341,9 +391,47 @@ const App: React.FC = () => {
                 onToggle={() => setIsHallExpanded(!isHallExpanded)}
             />
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isHallExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                 {hallSubMenus.filter(item => item.roles.includes(userRole)).map(item => (
-                     <SubNavItem key={item.id} view={item.id} label={item.label} />
-                 ))}
+              {hallSubMenus.filter(item => item.roles.includes(userRole)).map(item => {
+                if (item.children) {
+                  const isAllocationModule = item.children.map(c => c.id).includes(currentView);
+                  return (
+                    <div key={item.id}>
+                      <button
+                        onClick={() => {
+                          // 点击分组默认进入模块首页
+                          setCurrentView('allocation-home');
+                          setSidebarOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-2 mx-2 rounded-md transition-all duration-200 font-medium text-xs mb-1 max-w-[calc(100%-16px)] pl-11 ${
+                          isAllocationModule ? 'text-[#3370ff] bg-[#f0f5ff]' : 'text-[#646a73] hover:bg-[#f2f3f5] hover:text-[#1f2329]'
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        <ChevronDown size={14} className={`transition-transform duration-200 ${isAllocationModule ? 'rotate-180' : ''}`} />
+                      </button>
+                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isAllocationModule ? 'max-h-[500px]' : 'max-h-0'}`}>
+                        {item.children.map(child => (
+                          <button
+                            key={child.id}
+                            onClick={() => {
+                              setCurrentView(child.id);
+                              setSidebarOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-2 mx-2 rounded-md transition-all duration-200 font-medium text-xs mb-1 max-w-[calc(100%-16px)] pl-16 ${
+                              currentView === child.id
+                                ? 'text-[#3370ff] bg-[#f0f5ff]'
+                                : 'text-[#646a73] hover:bg-[#f2f3f5] hover:text-[#1f2329]'
+                            }`}
+                          >
+                            <span className="truncate">{child.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return <SubNavItem key={item.id} view={item.id} label={item.label} />;
+              })}
             </div>
             
             {userRole === UserRole.AssetAdmin && (

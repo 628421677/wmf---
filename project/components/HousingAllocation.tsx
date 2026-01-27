@@ -19,6 +19,8 @@ import {
 
 interface HousingAllocationProps {
   userRole: UserRole;
+  initialTab?: TabType;
+  hideTabNav?: boolean;
 }
 
 // localStorage hook
@@ -86,6 +88,13 @@ const ProgressBar: React.FC<{ value: number; max: number; color?: string }> = ({
 
 type TabType = 'requests' | 'allocation' | 'returns' | 'history' | 'analytics';
 
+interface HousingAllocationProps {
+  userRole: UserRole;
+  initialTab?: TabType;
+  hideTabNav?: boolean;
+}
+
+
 type RoomAdjustmentRequestStatus = 'Pending' | 'Approved' | 'Allocated' | 'Completed';
 
 type RoomAdjustmentRequest = {
@@ -106,7 +115,7 @@ type RoomAdjustmentRequest = {
   completedAt?: string;
 };
 
-const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
+const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole, initialTab = 'requests', hideTabNav = false }) => {
   // 数据状态
   const [requests, setRequests] = useLocalStorage<ExtendedRoomRequest[]>('housing-requests-v2', MOCK_EXTENDED_REQUESTS);
   const [availableRooms, setAvailableRooms] = useLocalStorage<AvailableRoom[]>('available-rooms', MOCK_AVAILABLE_ROOMS);
@@ -297,7 +306,7 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
   const [temporaryBorrows] = useState<TemporaryBorrow[]>(MOCK_TEMPORARY_BORROWS);
 
   // UI 状态
-  const [activeTab, setActiveTab] = useState<TabType>('requests');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
   // 房源编辑 / 分配
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
@@ -999,26 +1008,28 @@ const HousingAllocation: React.FC<HousingAllocationProps> = ({ userRole }) => {
       </div>
 
       {/* Tab 导航 */}
-      <div className="border-b border-[#dee0e3]">
-        <div className="flex gap-1">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition ${
-                activeTab === tab.id ? 'border-[#3370ff] text-[#3370ff]' : 'border-transparent text-[#646a73] hover:text-[#1f2329]'
-              }`}
-            >
-              {tab.icon} {tab.label}
-              {tab.badge !== undefined && (
-                <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-[#3370ff] text-white' : 'bg-[#f2f3f5] text-[#646a73]'}`}>
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          ))}
+      {!hideTabNav && (
+        <div className="border-b border-[#dee0e3]">
+          <div className="flex gap-1">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-4 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition ${
+                  activeTab === tab.id ? 'border-[#3370ff] text-[#3370ff]' : 'border-transparent text-[#646a73] hover:text-[#1f2329]'
+                }`}
+              >
+                {tab.icon} {tab.label}
+                {tab.badge !== undefined && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-[#3370ff] text-white' : 'bg-[#f2f3f5] text-[#646a73]'}`}>
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Tab 内容 */}
       <div className="bg-white rounded-lg border border-[#dee0e3] overflow-hidden">
