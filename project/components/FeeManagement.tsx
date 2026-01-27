@@ -49,6 +49,8 @@ import { getPersonQuotaArea } from '../utils/personQuota';
 
 interface FeeManagementProps {
   userRole: UserRole;
+  initialTab?: TabType;
+  hideTabNav?: boolean;
 }
 
 // localStorage hook
@@ -72,7 +74,7 @@ function useLocalStorage<T>(key: string, initialValue: T) {
 
 type TabType = 'overview' | 'persons' | 'bills' | 'payments' | 'reminders';
 
-const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
+const FeeManagement: React.FC<FeeManagementProps> = ({ userRole, initialTab = 'overview', hideTabNav = false }) => {
   // 数据状态
   const [fees, setFees] = useLocalStorage<ExtendedDepartmentFee[]>('extended-fees', MOCK_EXTENDED_FEES);
   const [bills, setBills] = useLocalStorage<FeeBill[]>('fee-bills', MOCK_FEE_BILLS);
@@ -84,7 +86,7 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
   const [billMonth, setBillMonth] = useState<string>('2025-01');
 
   // UI 状态
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<FeeStatus | 'all'>('all');
   const [yearFilter, setYearFilter] = useState<number>(2025);
@@ -558,6 +560,7 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
       )}
 
       {/* Tab 导航 */}
+      {!hideTabNav && (
       <div className="border-b border-[#dee0e3]">
         <div className="flex gap-1 overflow-x-auto">
           {tabs.filter(tab => !tab.adminOnly || isAssetAdmin).map(tab => (
@@ -578,6 +581,7 @@ const FeeManagement: React.FC<FeeManagementProps> = ({ userRole }) => {
           ))}
         </div>
       </div>
+      )}
 
       {/* Tab 内容 */}
       <div className="bg-white rounded-lg border border-[#dee0e3] overflow-hidden">

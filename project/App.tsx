@@ -22,6 +22,12 @@ import HousingAllocationRecords from './components/HousingAllocationRecords';
 import HousingAllocationAnalytics from './components/HousingAllocationAnalytics';
 import HousingAllocationHome from './components/HousingAllocationHome';
 import FeeManagement from './components/FeeManagement';
+import FeeManagementHome from './components/FeeManagementHome';
+import FeeManagementOverview from './components/FeeManagementOverview';
+import FeeManagementPersons from './components/FeeManagementPersons';
+import FeeManagementBills from './components/FeeManagementBills';
+import FeeManagementPayments from './components/FeeManagementPayments';
+import FeeManagementReminders from './components/FeeManagementReminders';
 import MaintenanceEnhanced from './components/MaintenanceEnhanced';
 import BusinessHall from './components/BusinessHall';
 import AssetDigitalization from './components/AssetDigitalization';
@@ -58,6 +64,12 @@ export type View =
   | 'allocation-records'
   | 'allocation-analytics'
   | 'fees' 
+  | 'fees-home'
+  | 'fees-overview'
+  | 'fees-persons'
+  | 'fees-bills'
+  | 'fees-payments'
+  | 'fees-reminders'
   | 'commercial' 
   | 'maintenance' 
   | 'inventory'
@@ -78,6 +90,12 @@ const viewToPath: Record<View, string> = {
   'allocation-records': '/hall/allocation/records',
   'allocation-analytics': '/hall/allocation/analytics',
   fees: '/hall/fees',
+  'fees-home': '/hall/fees/home',
+  'fees-overview': '/hall/fees/overview',
+  'fees-persons': '/hall/fees/persons',
+  'fees-bills': '/hall/fees/bills',
+  'fees-payments': '/hall/fees/payments',
+  'fees-reminders': '/hall/fees/reminders',
   commercial: '/hall/commercial',
   maintenance: '/hall/maintenance',
   inventory: '/hall/inventory',
@@ -111,7 +129,7 @@ const App: React.FC = () => {
   const [isRulesExpanded, setIsRulesExpanded] = useState(true);
 
   // Helper to determine active section
-  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'commercial', 'maintenance', 'inventory', 'public-house-query', 'reports'].includes(currentView);
+  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'maintenance', 'inventory', 'public-house-query', 'reports'].includes(currentView);
   const isHallSection = currentView === 'hall' || isHallModule;
   const isDigitalModule = ['digital-building', 'digital-room'].includes(currentView);
   const isDigitalSection = currentView === 'digital' || isDigitalModule;
@@ -173,7 +191,13 @@ const App: React.FC = () => {
       case 'allocation-adjust': return <HousingAllocationAdjust userRole={userRole} />;
       case 'allocation-records': return <HousingAllocationRecords userRole={userRole} />;
       case 'allocation-analytics': return <HousingAllocationAnalytics userRole={userRole} />;
-      case 'fees': return <FeeManagement userRole={userRole} />;
+      case 'fees': return <Navigate to="/hall/fees/home" replace />;
+      case 'fees-home': return <FeeManagementHome userRole={userRole} onNavigate={setCurrentView} />;
+      case 'fees-overview': return <FeeManagementOverview userRole={userRole} />;
+      case 'fees-persons': return <FeeManagementPersons userRole={userRole} />;
+      case 'fees-bills': return <FeeManagementBills userRole={userRole} />;
+      case 'fees-payments': return <FeeManagementPayments userRole={userRole} />;
+      case 'fees-reminders': return <FeeManagementReminders userRole={userRole} />;
       case 'maintenance': return <MaintenanceEnhanced userRole={userRole} />;
       case 'reports': return <ReportCenterEnhanced userRole={userRole} />;
       
@@ -278,6 +302,12 @@ const App: React.FC = () => {
         case 'allocation-records': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('allocation-home')}> / 公用房归口调配管理</span> <span className="text-[#1f2329]"> / 调整记录</span></>;
         case 'allocation-analytics': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('allocation-home')}> / 公用房归口调配管理</span> <span className="text-[#1f2329]"> / 数据分析</span></>;
         case 'fees': return <>{hallCrumb} <span className="text-[#1f2329]"> / 校内公用房使用收费管理</span></>;
+        case 'fees-home': return <>{hallCrumb} <span className="text-[#1f2329]"> / 校内公用房使用收费管理</span></>;
+        case 'fees-overview': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('fees-home')}> / 校内公用房使用收费管理</span> <span className="text-[#1f2329]"> / 费用总览</span></>;
+        case 'fees-persons': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('fees-home')}> / 校内公用房使用收费管理</span> <span className="text-[#1f2329]"> / 个人缴费</span></>;
+        case 'fees-bills': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('fees-home')}> / 校内公用房使用收费管理</span> <span className="text-[#1f2329]"> / 账单管理</span></>;
+        case 'fees-payments': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('fees-home')}> / 校内公用房使用收费管理</span> <span className="text-[#1f2329]"> / 缴费记录</span></>;
+        case 'fees-reminders': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('fees-home')}> / 校内公用房使用收费管理</span> <span className="text-[#1f2329]"> / 催缴管理</span></>;
         case 'commercial': return <>{hallCrumb} <span className="text-[#1f2329]"> / 经营性用房与周转房管理</span></>;
         case 'maintenance': return <>{hallCrumb} <span className="text-[#1f2329]"> / 维修与物业</span></>;
         case 'inventory': return <>{hallCrumb} <span className="text-[#1f2329]"> / 房产盘点核查</span></>;
@@ -320,7 +350,18 @@ const App: React.FC = () => {
       ],
     },
 
-    { id: 'fees', label: '校内公用房使用收费管理', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+    {
+      id: 'fees',
+      label: '校内公用房使用收费管理',
+      roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin],
+      children: [
+        { id: 'fees-overview', label: '费用总览', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'fees-persons', label: '个人缴费', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'fees-bills', label: '账单管理', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'fees-payments', label: '缴费记录', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'fees-reminders', label: '催缴管理', roles: [UserRole.AssetAdmin] },
+      ],
+    },
     { id: 'commercial', label: '经营性用房与周转房管理', roles: [UserRole.AssetAdmin, UserRole.Teacher, UserRole.Guest] },
     { id: 'maintenance', label: '维修与物业', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin, UserRole.Teacher] },
     { id: 'inventory', label: '房产盘点核查', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
@@ -393,39 +434,57 @@ const App: React.FC = () => {
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isHallExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
               {hallSubMenus.filter(item => item.roles.includes(userRole)).map(item => {
                 if (item.children) {
-                  const isAllocationModule = item.children.map(c => c.id).includes(currentView);
+                  const groupHomeView: View = item.id === 'allocation' ? 'allocation-home' : item.id === 'fees' ? 'fees-home' : item.id;
+                  const groupViews = [groupHomeView, ...item.children.map(c => c.id)];
+                  const isGroupModule = groupViews.includes(currentView);
+
                   return (
                     <div key={item.id}>
                       <button
                         onClick={() => {
-                          // 点击分组默认进入模块首页
-                          setCurrentView('allocation-home');
+                          setCurrentView(groupHomeView);
                           setSidebarOpen(false);
                         }}
                         className={`w-full flex items-center justify-between px-4 py-2 mx-2 rounded-md transition-all duration-200 font-medium text-xs mb-1 max-w-[calc(100%-16px)] pl-11 ${
-                          isAllocationModule ? 'text-[#3370ff] bg-[#f0f5ff]' : 'text-[#646a73] hover:bg-[#f2f3f5] hover:text-[#1f2329]'
+                          isGroupModule ? 'text-[#3370ff] bg-[#f0f5ff]' : 'text-[#646a73] hover:bg-[#f2f3f5] hover:text-[#1f2329]'
                         }`}
                       >
                         <span>{item.label}</span>
-                        <ChevronDown size={14} className={`transition-transform duration-200 ${isAllocationModule ? 'rotate-180' : ''}`} />
+                        <ChevronDown size={14} className={`transition-transform duration-200 ${isGroupModule ? 'rotate-180' : ''}`} />
                       </button>
-                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isAllocationModule ? 'max-h-[500px]' : 'max-h-0'}`}>
-                        {item.children.map(child => (
-                          <button
-                            key={child.id}
-                            onClick={() => {
-                              setCurrentView(child.id);
-                              setSidebarOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-4 py-2 mx-2 rounded-md transition-all duration-200 font-medium text-xs mb-1 max-w-[calc(100%-16px)] pl-16 ${
-                              currentView === child.id
-                                ? 'text-[#3370ff] bg-[#f0f5ff]'
-                                : 'text-[#646a73] hover:bg-[#f2f3f5] hover:text-[#1f2329]'
-                            }`}
-                          >
-                            <span className="truncate">{child.label}</span>
-                          </button>
-                        ))}
+                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isGroupModule ? 'max-h-[500px]' : 'max-h-0'}`}>
+                        <button
+                          onClick={() => {
+                            setCurrentView(groupHomeView);
+                            setSidebarOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2 mx-2 rounded-md transition-all duration-200 font-medium text-xs mb-1 max-w-[calc(100%-16px)] pl-16 ${
+                            currentView === groupHomeView
+                              ? 'text-[#3370ff] bg-[#f0f5ff]'
+                              : 'text-[#646a73] hover:bg-[#f2f3f5] hover:text-[#1f2329]'
+                          }`}
+                        >
+                          <span className="truncate">首页</span>
+                        </button>
+
+                        {item.children
+                          .filter(child => child.roles.includes(userRole))
+                          .map(child => (
+                            <button
+                              key={child.id}
+                              onClick={() => {
+                                setCurrentView(child.id);
+                                setSidebarOpen(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-4 py-2 mx-2 rounded-md transition-all duration-200 font-medium text-xs mb-1 max-w-[calc(100%-16px)] pl-16 ${
+                                currentView === child.id
+                                  ? 'text-[#3370ff] bg-[#f0f5ff]'
+                                  : 'text-[#646a73] hover:bg-[#f2f3f5] hover:text-[#1f2329]'
+                              }`}
+                            >
+                              <span className="truncate">{child.label}</span>
+                            </button>
+                          ))}
                       </div>
                     </div>
                   );
