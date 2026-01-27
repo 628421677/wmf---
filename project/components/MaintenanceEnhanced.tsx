@@ -109,8 +109,14 @@ interface MaintenanceStats {
   overdueTickets: number;
 }
 
+type MaintenanceTab = 'repair' | 'property' | 'stats';
+
 interface MaintenanceEnhancedProps {
   userRole: UserRole;
+  initialTab?: MaintenanceTab;
+  hideTabNav?: boolean;
+  pageTitle?: string;
+  pageSubtitle?: string;
 }
 
 // ========== Mock 数据 ==========
@@ -201,7 +207,13 @@ const SERVICE_TYPE_LABELS: Record<PropertyServiceRequest['type'], string> = {
 
 // ========== 主组件 ==========
 
-const MaintenanceEnhanced: React.FC<MaintenanceEnhancedProps> = ({ userRole }) => {
+const MaintenanceEnhanced: React.FC<MaintenanceEnhancedProps> = ({
+  userRole,
+  initialTab = 'repair',
+  hideTabNav = false,
+  pageTitle,
+  pageSubtitle,
+}) => {
   // 状态管理
   const [tickets, setTickets] = useState<EnhancedRepairTicket[]>(() => {
     const saved = localStorage.getItem('uniassets-enhanced-tickets');
@@ -213,7 +225,7 @@ const MaintenanceEnhanced: React.FC<MaintenanceEnhancedProps> = ({ userRole }) =
   });
 
   // UI 状态
-  const [activeTab, setActiveTab] = useState<'repair' | 'property' | 'stats'>('repair');
+  const [activeTab, setActiveTab] = useState<MaintenanceTab>(initialTab);
   const [showNewTicketForm, setShowNewTicketForm] = useState(false);
   const [showNewServiceForm, setShowNewServiceForm] = useState(false);
   const [viewingTicket, setViewingTicket] = useState<EnhancedRepairTicket | null>(null);
@@ -440,8 +452,8 @@ const MaintenanceEnhanced: React.FC<MaintenanceEnhancedProps> = ({ userRole }) =
       {/* 页头 */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-[#1f2329]">维修与物业服务</h2>
-          <p className="text-[#646a73]">智能报修、派单、物业服务一站式管理</p>
+          <h2 className="text-2xl font-bold text-[#1f2329]">{pageTitle || '维修与物业服务'}</h2>
+          <p className="text-[#646a73]">{pageSubtitle || '智能报修、派单、物业服务一站式管理'}</p>
         </div>
         <div className="flex gap-2">
           {userRole === UserRole.AssetAdmin && (
@@ -456,6 +468,7 @@ const MaintenanceEnhanced: React.FC<MaintenanceEnhancedProps> = ({ userRole }) =
       </div>
 
       {/* Tab 切换 */}
+      {!hideTabNav && (
       <div className="flex gap-1 bg-[#f5f6f7] p-1 rounded-lg w-fit">
         {[
           { key: 'repair', label: '维修工单', icon: Wrench },
@@ -471,6 +484,7 @@ const MaintenanceEnhanced: React.FC<MaintenanceEnhancedProps> = ({ userRole }) =
           </button>
         ))}
       </div>
+      )}
 
       {/* 统计卡片 - 管理员视图 */}
       {userRole === UserRole.AssetAdmin && activeTab === 'repair' && (

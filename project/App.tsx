@@ -29,6 +29,10 @@ import FeeManagementBills from './components/FeeManagementBills';
 import FeeManagementPayments from './components/FeeManagementPayments';
 import FeeManagementReminders from './components/FeeManagementReminders';
 import MaintenanceEnhanced from './components/MaintenanceEnhanced';
+import MaintenanceHome from './components/MaintenanceHome';
+import MaintenanceRepair from './components/MaintenanceRepair';
+import MaintenanceProperty from './components/MaintenanceProperty';
+import MaintenanceStats from './components/MaintenanceStats';
 import BusinessHall from './components/BusinessHall';
 import AssetDigitalization from './components/AssetDigitalization';
 import RuleEngine from './components/RuleEngine';
@@ -101,7 +105,11 @@ export type View =
   | 'apartment-utilities'
   | 'apartment-deposits'
 
-  | 'maintenance' 
+  | 'maintenance'
+  | 'maintenance-home'
+  | 'maintenance-repair'
+  | 'maintenance-property'
+  | 'maintenance-stats'
   | 'inventory'
   | 'public-house-query'
   | 'reports';
@@ -145,6 +153,10 @@ const viewToPath: Record<View, string> = {
 
 
   maintenance: '/hall/maintenance',
+  'maintenance-home': '/hall/maintenance/home',
+  'maintenance-repair': '/hall/maintenance/repair',
+  'maintenance-property': '/hall/maintenance/property',
+  'maintenance-stats': '/hall/maintenance/stats',
   inventory: '/hall/inventory',
   'public-house-query': '/hall/public-house-query',
   reports: '/hall/reports',
@@ -176,7 +188,7 @@ const App: React.FC = () => {
   const [isRulesExpanded, setIsRulesExpanded] = useState(true);
 
   // Helper to determine active section
-  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'inventory', 'public-house-query', 'reports'].includes(currentView);
+  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'maintenance-home', 'maintenance-repair', 'maintenance-property', 'maintenance-stats', 'inventory', 'public-house-query', 'reports'].includes(currentView);
   const isHallSection = currentView === 'hall' || isHallModule;
   const isDigitalModule = ['digital-building', 'digital-room'].includes(currentView);
   const isDigitalSection = currentView === 'digital' || isDigitalModule;
@@ -245,7 +257,11 @@ const App: React.FC = () => {
       case 'fees-bills': return <FeeManagementBills userRole={userRole} />;
       case 'fees-payments': return <FeeManagementPayments userRole={userRole} />;
       case 'fees-reminders': return <FeeManagementReminders userRole={userRole} />;
-      case 'maintenance': return <MaintenanceEnhanced userRole={userRole} />;
+      case 'maintenance': return <Navigate to="/hall/maintenance/home" replace />;
+      case 'maintenance-home': return <MaintenanceHome userRole={userRole} onNavigate={setCurrentView} />;
+      case 'maintenance-repair': return <MaintenanceRepair userRole={userRole} />;
+      case 'maintenance-property': return <MaintenanceProperty userRole={userRole} />;
+      case 'maintenance-stats': return <MaintenanceStats userRole={userRole} />;
       case 'reports': return <ReportCenterEnhanced userRole={userRole} />;
       
       // Asset Digitalization (Sub-views)
@@ -386,7 +402,11 @@ const App: React.FC = () => {
         case 'apartment-rooms': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 房间管理</span></>;
         case 'apartment-utilities': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 水电管理</span></>;
         case 'apartment-deposits': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 押金管理</span></>;
-        case 'maintenance': return <>{hallCrumb} <span className="text-[#1f2329]"> / 维修与物业</span></>;
+        case 'maintenance': return <>{hallCrumb} <span className="text-[#1f2329]"> / 维修与物业服务</span></>;
+        case 'maintenance-home': return <>{hallCrumb} <span className="text-[#1f2329]"> / 维修与物业服务</span></>;
+        case 'maintenance-repair': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('maintenance-home')}> / 维修与物业服务</span> <span className="text-[#1f2329]"> / 维修工单</span></>;
+        case 'maintenance-property': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('maintenance-home')}> / 维修与物业服务</span> <span className="text-[#1f2329]"> / 物业服务</span></>;
+        case 'maintenance-stats': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('maintenance-home')}> / 维修与物业服务</span> <span className="text-[#1f2329]"> / 数据统计</span></>;
         case 'inventory': return <>{hallCrumb} <span className="text-[#1f2329]"> / 房产盘点核查</span></>;
         case 'public-house-query': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公房综合查询</span></>;
         case 'reports': return <>{hallCrumb} <span className="text-[#1f2329]"> / 统计报表中心</span></>;
@@ -466,7 +486,16 @@ const App: React.FC = () => {
       ],
     },
 
-    { id: 'maintenance', label: '维修与物业', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin, UserRole.Teacher] },
+    {
+      id: 'maintenance',
+      label: '维修与物业服务',
+      roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin, UserRole.Teacher],
+      children: [
+        { id: 'maintenance-repair', label: '维修工单', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin, UserRole.Teacher] },
+        { id: 'maintenance-property', label: '物业服务', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin, UserRole.Teacher] },
+        { id: 'maintenance-stats', label: '数据统计', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+      ],
+    },
     { id: 'inventory', label: '房产盘点核查', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
     { id: 'public-house-query', label: '公房综合查询', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
     { id: 'reports', label: '统计报表中心', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
@@ -542,6 +571,7 @@ const App: React.FC = () => {
                     item.id === 'fees' ? 'fees-home' :
                     item.id === 'commercial-mgmt' ? 'commercial-home' :
                     item.id === 'residence-mgmt' ? 'residence-home' :
+                    item.id === 'maintenance' ? 'maintenance-home' :
                     item.id;
                   const groupViews = [groupHomeView, ...item.children.map(c => c.id)];
                   const isGroupModule = groupViews.includes(currentView);
