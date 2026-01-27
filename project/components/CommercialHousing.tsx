@@ -481,6 +481,13 @@ const StatCard: React.FC<{
 
 interface CommercialHousingProps {
   userRole: UserRole;
+  initialMainTab?: 'commercial' | 'apartment';
+  initialCommercialTab?: CommercialTab;
+  initialApartmentTab?: ApartmentTab;
+  hideMainTabNav?: boolean;
+  hideSubTabNav?: boolean;
+  pageTitle?: string;
+  pageSubtitle?: string;
 }
 
 type CommercialTab = 'overview' | 'spaces' | 'contracts' | 'rent' | 'analytics';
@@ -498,10 +505,19 @@ const isDuplicateSpaceKey = (a: string, b: string) => {
   return ka.floor === kb.floor && ka.roomNo === kb.roomNo;
 };
 
-const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
-  const [mainTab, setMainTab] = useState<'commercial' | 'apartment'>('commercial');
-  const [commercialTab, setCommercialTab] = useState<CommercialTab>('overview');
-  const [apartmentTab, setApartmentTab] = useState<ApartmentTab>('overview');
+const CommercialHousing: React.FC<CommercialHousingProps> = ({
+  userRole,
+  initialMainTab = 'commercial',
+  initialCommercialTab = 'overview',
+  initialApartmentTab = 'overview',
+  hideMainTabNav = false,
+  hideSubTabNav = false,
+  pageTitle,
+  pageSubtitle,
+}) => {
+  const [mainTab, setMainTab] = useState<'commercial' | 'apartment'>(initialMainTab);
+  const [commercialTab, setCommercialTab] = useState<CommercialTab>(initialCommercialTab);
+  const [apartmentTab, setApartmentTab] = useState<ApartmentTab>(initialApartmentTab);
 
   // 数据状态
   const [spaces, setSpaces] = useLocalStorage<SpaceItem[]>('commercial-spaces-v2', initSpaces);
@@ -1142,10 +1158,11 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
         <div className="flex items-center gap-3">
           <Building2 size={24} className="text-[#3370ff]" />
           <div>
-            <h2 className="text-2xl font-bold text-[#1f2329]">经营性用房与周转房管理</h2>
-            <p className="text-sm text-[#8f959e]">租金收缴、合同管理、公寓分配、水电结算全流程</p>
+            <h2 className="text-2xl font-bold text-[#1f2329]">{pageTitle || '经营性用房与周转房管理'}</h2>
+            <p className="text-sm text-[#8f959e]">{pageSubtitle || '租金收缴、合同管理、公寓分配、水电结算全流程'}</p>
           </div>
         </div>
+        {!hideMainTabNav && (
         <div className="flex gap-2 text-sm font-medium bg-[#f5f6f7] p-1 rounded">
           <button 
             onClick={() => setMainTab('commercial')} 
@@ -1162,6 +1179,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
             </button>
           )}
         </div>
+        )}
       </div>
 
       {/* ==================== 商业用房管理 ==================== */}
@@ -1210,7 +1228,8 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
           )}
 
           {/* 子Tab导航 */}
-          <div className="border-b border-[#dee0e3]">
+          {!hideSubTabNav && (
+            <div className="border-b border-[#dee0e3]">
             <div className="flex gap-1">
               {[
                 { id: 'overview', label: '总览', icon: <BarChart3 size={16} /> },
@@ -1236,6 +1255,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
               ))}
             </div>
           </div>
+          )}
 
           {/* 总览 */}
           {commercialTab === 'overview' && (
@@ -1676,7 +1696,8 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
           </div>
 
           {/* 子Tab导航 */}
-          <div className="border-b border-[#dee0e3]">
+          {!hideSubTabNav && (
+            <div className="border-b border-[#dee0e3]">
             <div className="flex gap-1">
               {[
                 { id: 'overview', label: '总览', icon: <BarChart3 size={16} /> },
@@ -1702,6 +1723,7 @@ const CommercialHousing: React.FC<CommercialHousingProps> = ({ userRole }) => {
               ))}
             </div>
           </div>
+          )}
 
           {/* 概览 */}
           {apartmentTab === 'overview' && (

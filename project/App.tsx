@@ -34,6 +34,18 @@ import AssetDigitalization from './components/AssetDigitalization';
 import RuleEngine from './components/RuleEngine';
 import ReportCenterEnhanced from './components/ReportCenterEnhanced';
 import CommercialHousing from './components/CommercialHousing';
+import CommercialManagementHome from './components/CommercialManagementHome';
+import CommercialManagementOverview from './components/CommercialManagementOverview';
+import CommercialManagementSpaces from './components/CommercialManagementSpaces';
+import CommercialManagementContracts from './components/CommercialManagementContracts';
+import CommercialManagementRent from './components/CommercialManagementRent';
+import CommercialManagementAnalytics from './components/CommercialManagementAnalytics';
+import ApartmentManagementHome from './components/ApartmentManagementHome';
+import ApartmentManagementOverview from './components/ApartmentManagementOverview';
+import ApartmentManagementApplications from './components/ApartmentManagementApplications';
+import ApartmentManagementRooms from './components/ApartmentManagementRooms';
+import ApartmentManagementUtilities from './components/ApartmentManagementUtilities';
+import ApartmentManagementDeposits from './components/ApartmentManagementDeposits';
 import InventoryCheckEnhanced from './components/InventoryCheckEnhanced';
 import PublicHouseComprehensiveQuery from './components/PublicHouseComprehensiveQuery';
 import BigScreen from './components/BigScreen';
@@ -70,7 +82,25 @@ export type View =
   | 'fees-bills'
   | 'fees-payments'
   | 'fees-reminders'
-  | 'commercial' 
+
+  // Commercial housing split
+  | 'commercial'
+  | 'commercial-mgmt'
+  | 'commercial-home'
+  | 'commercial-overview'
+  | 'commercial-spaces'
+  | 'commercial-contracts'
+  | 'commercial-rent'
+  | 'commercial-analytics'
+
+  | 'residence-mgmt'
+  | 'residence-home'
+  | 'apartment-overview'
+  | 'apartment-applications'
+  | 'apartment-rooms'
+  | 'apartment-utilities'
+  | 'apartment-deposits'
+
   | 'maintenance' 
   | 'inventory'
   | 'public-house-query'
@@ -97,6 +127,23 @@ const viewToPath: Record<View, string> = {
   'fees-payments': '/hall/fees/payments',
   'fees-reminders': '/hall/fees/reminders',
   commercial: '/hall/commercial',
+  'commercial-mgmt': '/hall/commercial-mgmt',
+  'commercial-home': '/hall/commercial-mgmt/home',
+  'commercial-overview': '/hall/commercial-mgmt/overview',
+  'commercial-spaces': '/hall/commercial-mgmt/spaces',
+  'commercial-contracts': '/hall/commercial-mgmt/contracts',
+  'commercial-rent': '/hall/commercial-mgmt/rent',
+  'commercial-analytics': '/hall/commercial-mgmt/analytics',
+
+  'residence-mgmt': '/hall/residence-mgmt',
+  'residence-home': '/hall/residence-mgmt/home',
+  'apartment-overview': '/hall/residence-mgmt/overview',
+  'apartment-applications': '/hall/residence-mgmt/applications',
+  'apartment-rooms': '/hall/residence-mgmt/rooms',
+  'apartment-utilities': '/hall/residence-mgmt/utilities',
+  'apartment-deposits': '/hall/residence-mgmt/deposits',
+
+
   maintenance: '/hall/maintenance',
   inventory: '/hall/inventory',
   'public-house-query': '/hall/public-house-query',
@@ -129,7 +176,7 @@ const App: React.FC = () => {
   const [isRulesExpanded, setIsRulesExpanded] = useState(true);
 
   // Helper to determine active section
-  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'maintenance', 'inventory', 'public-house-query', 'reports'].includes(currentView);
+  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'inventory', 'public-house-query', 'reports'].includes(currentView);
   const isHallSection = currentView === 'hall' || isHallModule;
   const isDigitalModule = ['digital-building', 'digital-room'].includes(currentView);
   const isDigitalSection = currentView === 'digital' || isDigitalModule;
@@ -214,7 +261,22 @@ const App: React.FC = () => {
       case 'rules-alert': return <RuleEngine subView="alert" />;
 
       // Placeholders
-      case 'commercial': return <CommercialHousing userRole={userRole} />;
+      case 'commercial': return <Navigate to="/hall/commercial-mgmt/home" replace />;
+      case 'commercial-mgmt': return <Navigate to="/hall/commercial-mgmt/home" replace />;
+      case 'commercial-home': return <CommercialManagementHome userRole={userRole} onNavigate={setCurrentView} />;
+      case 'commercial-overview': return <CommercialManagementOverview userRole={userRole} />;
+      case 'commercial-spaces': return <CommercialManagementSpaces userRole={userRole} />;
+      case 'commercial-contracts': return <CommercialManagementContracts userRole={userRole} />;
+      case 'commercial-rent': return <CommercialManagementRent userRole={userRole} />;
+      case 'commercial-analytics': return <CommercialManagementAnalytics userRole={userRole} />;
+
+      case 'residence-mgmt': return <Navigate to="/hall/residence-mgmt/home" replace />;
+      case 'residence-home': return <ApartmentManagementHome userRole={userRole} onNavigate={setCurrentView} />;
+      case 'apartment-overview': return <ApartmentManagementOverview userRole={userRole} />;
+      case 'apartment-applications': return <ApartmentManagementApplications userRole={userRole} />;
+      case 'apartment-rooms': return <ApartmentManagementRooms userRole={userRole} />;
+      case 'apartment-utilities': return <ApartmentManagementUtilities userRole={userRole} />;
+      case 'apartment-deposits': return <ApartmentManagementDeposits userRole={userRole} />;
       case 'inventory':
         return <InventoryCheckEnhanced />;
       case 'public-house-query':
@@ -308,7 +370,22 @@ const App: React.FC = () => {
         case 'fees-bills': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('fees-home')}> / 校内公用房使用收费管理</span> <span className="text-[#1f2329]"> / 账单管理</span></>;
         case 'fees-payments': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('fees-home')}> / 校内公用房使用收费管理</span> <span className="text-[#1f2329]"> / 缴费记录</span></>;
         case 'fees-reminders': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('fees-home')}> / 校内公用房使用收费管理</span> <span className="text-[#1f2329]"> / 催缴管理</span></>;
-        case 'commercial': return <>{hallCrumb} <span className="text-[#1f2329]"> / 经营性用房与周转房管理</span></>;
+        case 'commercial': return <>{hallCrumb} <span className="text-[#1f2329]"> / 经营性用房管理</span></>;
+        case 'commercial-mgmt': return <>{hallCrumb} <span className="text-[#1f2329]"> / 经营性用房管理</span></>;
+        case 'commercial-home': return <>{hallCrumb} <span className="text-[#1f2329]"> / 经营性用房管理</span></>;
+        case 'commercial-overview': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('commercial-home')}> / 经营性用房管理</span> <span className="text-[#1f2329]"> / 经营概览</span></>;
+        case 'commercial-spaces': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('commercial-home')}> / 经营性用房管理</span> <span className="text-[#1f2329]"> / 房源管理</span></>;
+        case 'commercial-contracts': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('commercial-home')}> / 经营性用房管理</span> <span className="text-[#1f2329]"> / 合同管理</span></>;
+        case 'commercial-rent': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('commercial-home')}> / 经营性用房管理</span> <span className="text-[#1f2329]"> / 租金管理</span></>;
+        case 'commercial-analytics': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('commercial-home')}> / 经营性用房管理</span> <span className="text-[#1f2329]"> / 数据分析</span></>;
+
+        case 'residence-mgmt': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公寓与宿舍管理</span></>;
+        case 'residence-home': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公寓与宿舍管理</span></>;
+        case 'apartment-overview': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 居住概览</span></>;
+        case 'apartment-applications': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 入住申请</span></>;
+        case 'apartment-rooms': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 房间管理</span></>;
+        case 'apartment-utilities': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 水电管理</span></>;
+        case 'apartment-deposits': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 押金管理</span></>;
         case 'maintenance': return <>{hallCrumb} <span className="text-[#1f2329]"> / 维修与物业</span></>;
         case 'inventory': return <>{hallCrumb} <span className="text-[#1f2329]"> / 房产盘点核查</span></>;
         case 'public-house-query': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公房综合查询</span></>;
@@ -362,7 +439,33 @@ const App: React.FC = () => {
         { id: 'fees-reminders', label: '催缴管理', roles: [UserRole.AssetAdmin] },
       ],
     },
-    { id: 'commercial', label: '经营性用房与周转房管理', roles: [UserRole.AssetAdmin, UserRole.Teacher, UserRole.Guest] },
+
+    {
+      id: 'commercial-mgmt',
+      label: '经营性用房管理',
+      roles: [UserRole.AssetAdmin, UserRole.Teacher, UserRole.Guest],
+      children: [
+        { id: 'commercial-overview', label: '经营概览', roles: [UserRole.AssetAdmin, UserRole.Teacher, UserRole.Guest] },
+        { id: 'commercial-spaces', label: '房源管理', roles: [UserRole.AssetAdmin, UserRole.Teacher, UserRole.Guest] },
+        { id: 'commercial-contracts', label: '合同管理', roles: [UserRole.AssetAdmin, UserRole.Teacher, UserRole.Guest] },
+        { id: 'commercial-rent', label: '租金管理', roles: [UserRole.AssetAdmin, UserRole.Teacher, UserRole.Guest] },
+        { id: 'commercial-analytics', label: '数据分析', roles: [UserRole.AssetAdmin, UserRole.Teacher, UserRole.Guest] },
+      ],
+    },
+
+    {
+      id: 'residence-mgmt',
+      label: '公寓与宿舍管理',
+      roles: [UserRole.AssetAdmin, UserRole.Teacher],
+      children: [
+        { id: 'apartment-overview', label: '居住概览', roles: [UserRole.AssetAdmin, UserRole.Teacher] },
+        { id: 'apartment-applications', label: '入住申请', roles: [UserRole.AssetAdmin, UserRole.Teacher] },
+        { id: 'apartment-rooms', label: '房间管理', roles: [UserRole.AssetAdmin, UserRole.Teacher] },
+        { id: 'apartment-utilities', label: '水电管理', roles: [UserRole.AssetAdmin, UserRole.Teacher] },
+        { id: 'apartment-deposits', label: '押金管理', roles: [UserRole.AssetAdmin, UserRole.Teacher] },
+      ],
+    },
+
     { id: 'maintenance', label: '维修与物业', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin, UserRole.Teacher] },
     { id: 'inventory', label: '房产盘点核查', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
     { id: 'public-house-query', label: '公房综合查询', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
@@ -434,7 +537,12 @@ const App: React.FC = () => {
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isHallExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
               {hallSubMenus.filter(item => item.roles.includes(userRole)).map(item => {
                 if (item.children) {
-                  const groupHomeView: View = item.id === 'allocation' ? 'allocation-home' : item.id === 'fees' ? 'fees-home' : item.id;
+                  const groupHomeView: View =
+                    item.id === 'allocation' ? 'allocation-home' :
+                    item.id === 'fees' ? 'fees-home' :
+                    item.id === 'commercial-mgmt' ? 'commercial-home' :
+                    item.id === 'residence-mgmt' ? 'residence-home' :
+                    item.id;
                   const groupViews = [groupHomeView, ...item.children.map(c => c.id)];
                   const isGroupModule = groupViews.includes(currentView);
 

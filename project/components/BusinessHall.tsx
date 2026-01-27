@@ -158,7 +158,7 @@ const BusinessHall: React.FC<BusinessHallProps> = ({ onNavigate, userRole }) => 
                 <X size={20} />
               </button>
             </div>
-            <CommercialHousing userRole={userRole} />
+            <CommercialHousing userRole={userRole} initialMainTab="commercial" hideMainTabNav={false} hideSubTabNav={false} pageTitle="经营性用房管理" pageSubtitle="租金收缴、合同管理、房源维护全流程" />
           </div>
         </div>
       )}
