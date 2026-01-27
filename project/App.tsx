@@ -207,6 +207,9 @@ const App: React.FC = () => {
   const [isDigitalExpanded, setIsDigitalExpanded] = useState(true);
   const [isRulesExpanded, setIsRulesExpanded] = useState(true);
 
+  // Group expansion state inside Business Hall
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
   // Helper to determine active section
   const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'maintenance-home', 'maintenance-repair', 'maintenance-property', 'maintenance-stats', 'inventory', 'public-house-query', 'public-house-home', 'public-house-one-person-multi-room', 'public-house-one-room-multi-person', 'public-house-dept-overview', 'public-house-quota', 'public-house-room-usage', 'public-house-commercial', 'reports'].includes(currentView);
   const isHallSection = currentView === 'hall' || isHallModule;
@@ -609,7 +612,7 @@ const App: React.FC = () => {
                 isOpen={isHallExpanded}
                 onToggle={() => setIsHallExpanded(!isHallExpanded)}
             />
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isHallExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`overflow-y-auto transition-all duration-300 ease-in-out ${isHallExpanded ? 'max-h-[70vh] opacity-100' : 'max-h-0 opacity-0'}`}>
               {hallSubMenus.filter(item => item.roles.includes(userRole)).map(item => {
                 if (item.children) {
                   const groupHomeView: View =
@@ -622,13 +625,13 @@ const App: React.FC = () => {
                     item.id;
                   const groupViews = [groupHomeView, ...item.children.map(c => c.id)];
                   const isGroupModule = groupViews.includes(currentView);
+                  const isGroupExpanded = expandedGroups[item.id] ?? isGroupModule;
 
                   return (
                     <div key={item.id}>
                       <button
                         onClick={() => {
-                          setCurrentView(groupHomeView);
-                          setSidebarOpen(false);
+                          setExpandedGroups(prev => ({ ...prev, [item.id]: !(prev[item.id] ?? isGroupModule) }));
                         }}
                         className={`w-full flex items-center justify-between px-4 py-2 mx-2 rounded-md transition-all duration-200 font-medium text-xs mb-1 max-w-[calc(100%-16px)] pl-11 ${
                           isGroupModule ? 'text-[#3370ff] bg-[#f0f5ff]' : 'text-[#646a73] hover:bg-[#f2f3f5] hover:text-[#1f2329]'
@@ -637,7 +640,7 @@ const App: React.FC = () => {
                         <span>{item.label}</span>
                         <ChevronDown size={14} className={`transition-transform duration-200 ${isGroupModule ? 'rotate-180' : ''}`} />
                       </button>
-                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isGroupModule ? 'max-h-[500px]' : 'max-h-0'}`}>
+                      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isGroupExpanded ? 'max-h-[500px]' : 'max-h-0'}`}>
                         <button
                           onClick={() => {
                             setCurrentView(groupHomeView);
