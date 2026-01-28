@@ -14,3 +14,4 @@ const PublicHouseOnePersonMultiRoomQuery: React.FC = () => {
 
 export default PublicHouseOnePersonMultiRoomQuery;
 
+

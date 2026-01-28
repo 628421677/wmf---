@@ -51,6 +51,7 @@ import ApartmentManagementRooms from './components/ApartmentManagementRooms';
 import ApartmentManagementUtilities from './components/ApartmentManagementUtilities';
 import ApartmentManagementDeposits from './components/ApartmentManagementDeposits';
 import InventoryCheckEnhanced from './components/InventoryCheckEnhanced';
+import InventoryHomePage from './components/InventoryHomePage';
 import PublicHouseQueryHome from './components/PublicHouseQueryHome';
 import PublicHouseOnePersonMultiRoomQuery from './components/PublicHouseOnePersonMultiRoomQuery';
 import PublicHouseOneRoomMultiPersonQuery from './components/PublicHouseOneRoomMultiPersonQuery';
@@ -117,6 +118,10 @@ export type View =
   | 'maintenance-property'
   | 'maintenance-stats'
   | 'inventory'
+  | 'inventory-home'
+  | 'inventory-tasks'
+  | 'inventory-discrepancies'
+  | 'inventory-analytics'
   | 'public-house-query'
   | 'public-house-home'
   | 'public-house-one-person-multi-room'
@@ -171,6 +176,10 @@ const viewToPath: Record<View, string> = {
   'maintenance-property': '/hall/maintenance/property',
   'maintenance-stats': '/hall/maintenance/stats',
   inventory: '/hall/inventory',
+  'inventory-home': '/hall/inventory/home',
+  'inventory-tasks': '/hall/inventory/tasks',
+  'inventory-discrepancies': '/hall/inventory/discrepancies',
+  'inventory-analytics': '/hall/inventory/analytics',
   'public-house-query': '/hall/public-house-query',
   'public-house-home': '/hall/public-house-query/home',
   'public-house-one-person-multi-room': '/hall/public-house-query/one-person-multi-room',
@@ -211,7 +220,7 @@ const App: React.FC = () => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   // Helper to determine active section
-  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'maintenance-home', 'maintenance-repair', 'maintenance-property', 'maintenance-stats', 'inventory', 'public-house-query', 'public-house-home', 'public-house-one-person-multi-room', 'public-house-one-room-multi-person', 'public-house-dept-overview', 'public-house-quota', 'public-house-room-usage', 'public-house-commercial', 'reports'].includes(currentView);
+  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'maintenance-home', 'maintenance-repair', 'maintenance-property', 'maintenance-stats', 'inventory', 'inventory-home', 'inventory-tasks', 'inventory-discrepancies', 'inventory-analytics', 'public-house-query', 'public-house-home', 'public-house-one-person-multi-room', 'public-house-one-room-multi-person', 'public-house-dept-overview', 'public-house-quota', 'public-house-room-usage', 'public-house-commercial', 'reports'].includes(currentView);
   const isHallSection = currentView === 'hall' || isHallModule;
   const isDigitalModule = ['digital-building', 'digital-room'].includes(currentView);
   const isDigitalSection = currentView === 'digital' || isDigitalModule;
@@ -317,6 +326,12 @@ const App: React.FC = () => {
       case 'apartment-utilities': return <ApartmentManagementUtilities userRole={userRole} />;
       case 'apartment-deposits': return <ApartmentManagementDeposits userRole={userRole} />;
       case 'inventory':
+        return <Navigate to="/hall/inventory/home" replace />;
+      case 'inventory-home':
+        return <InventoryHomePage onNavigate={setCurrentView} />;
+      case 'inventory-tasks':
+      case 'inventory-discrepancies':
+      case 'inventory-analytics':
         return <InventoryCheckEnhanced />;
       case 'public-house-query':
         return <Navigate to="/hall/public-house-query/home" replace />;
@@ -533,7 +548,16 @@ const App: React.FC = () => {
         { id: 'maintenance-stats', label: '数据统计', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
       ],
     },
-    { id: 'inventory', label: '房产盘点核查', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+    {
+      id: 'inventory',
+      label: '房产盘点核查',
+      roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin],
+      children: [
+        { id: 'inventory-tasks', label: '盘点任务', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'inventory-discrepancies', label: '差异处理', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'inventory-analytics', label: '统计分析', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+      ],
+    },
     {
       id: 'public-house-query',
       label: '公房综合查询',
@@ -622,6 +646,7 @@ const App: React.FC = () => {
                     item.id === 'residence-mgmt' ? 'residence-home' :
                     item.id === 'maintenance' ? 'maintenance-home' :
                     item.id === 'public-house-query' ? 'public-house-home' :
+                    item.id === 'inventory' ? 'inventory-home' :
                     item.id;
                   const groupViews = [groupHomeView, ...item.children.map(c => c.id)];
                   const isGroupModule = groupViews.includes(currentView);
@@ -632,6 +657,8 @@ const App: React.FC = () => {
                       <button
                         onClick={() => {
                           setExpandedGroups(prev => ({ ...prev, [item.id]: !(prev[item.id] ?? isGroupModule) }));
+                          setCurrentView(groupHomeView);
+                          setSidebarOpen(false);
                         }}
                         className={`w-full flex items-center justify-between px-4 py-2 mx-2 rounded-md transition-all duration-200 font-medium text-xs mb-1 max-w-[calc(100%-16px)] pl-11 ${
                           isGroupModule ? 'text-[#3370ff] bg-[#f0f5ff]' : 'text-[#646a73] hover:bg-[#f2f3f5] hover:text-[#1f2329]'
@@ -641,20 +668,6 @@ const App: React.FC = () => {
                         <ChevronDown size={14} className={`transition-transform duration-200 ${isGroupModule ? 'rotate-180' : ''}`} />
                       </button>
                       <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isGroupExpanded ? 'max-h-[500px]' : 'max-h-0'}`}>
-                        <button
-                          onClick={() => {
-                            setCurrentView(groupHomeView);
-                            setSidebarOpen(false);
-                          }}
-                          className={`w-full flex items-center gap-3 px-4 py-2 mx-2 rounded-md transition-all duration-200 font-medium text-xs mb-1 max-w-[calc(100%-16px)] pl-16 ${
-                            currentView === groupHomeView
-                              ? 'text-[#3370ff] bg-[#f0f5ff]'
-                              : 'text-[#646a73] hover:bg-[#f2f3f5] hover:text-[#1f2329]'
-                          }`}
-                        >
-                          <span className="truncate">首页</span>
-                        </button>
-
                         {item.children
                           .filter(child => child.roles.includes(userRole))
                           .map(child => (
