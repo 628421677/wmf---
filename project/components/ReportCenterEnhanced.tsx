@@ -9,6 +9,8 @@ import { UserRole } from '../types';
 
 interface ReportCenterEnhancedProps {
   userRole: UserRole;
+  initialTab?: 'standard' | 'custom' | 'logs';
+  hideTabBar?: boolean;
 }
 
 // 扩展的高基表数据
@@ -69,8 +71,8 @@ const CAMPUSES = ['全部校区', '旗山校区', '鳝溪校区', '浦东校区'
 const YEARS = ['2025', '2024', '2023', '2022', '2021'];
 const CATEGORIES = ['全部类别', '土地房屋', '固定资产', '仪器设备', '基建工程', '图书资料'];
 
-const ReportCenterEnhanced: React.FC<ReportCenterEnhancedProps> = ({ userRole }) => {
-  const [activeTab, setActiveTab] = useState<'standard' | 'custom' | 'logs'>('standard');
+const ReportCenterEnhanced: React.FC<ReportCenterEnhancedProps> = ({ userRole, initialTab = 'standard', hideTabBar = false }) => {
+  const [activeTab, setActiveTab] = useState<'standard' | 'custom' | 'logs'>(initialTab);
   const [previewingReport, setPreviewingReport] = useState<typeof HIGH_BASE_REPORTS[0] | null>(null);
   const [showTrendModal, setShowTrendModal] = useState<string | null>(null);
   const [showErrorDetail, setShowErrorDetail] = useState<typeof HIGH_BASE_REPORTS[0] | null>(null);
@@ -187,6 +189,7 @@ const ReportCenterEnhanced: React.FC<ReportCenterEnhancedProps> = ({ userRole })
       </div>
 
       {/* 标签页 */}
+      {!hideTabBar && (
       <div className="flex border-b border-[#dee0e3]">
         <button 
           onClick={() => setActiveTab('standard')}
@@ -207,6 +210,7 @@ const ReportCenterEnhanced: React.FC<ReportCenterEnhancedProps> = ({ userRole })
           <History size={18} /> 操作日志
         </button>
       </div>
+      )}
 
       {/* 内容区域 */}
       <div className="flex-1 bg-white rounded-lg border border-[#dee0e3] shadow-sm overflow-hidden flex flex-col min-h-0">

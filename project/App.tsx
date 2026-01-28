@@ -37,6 +37,10 @@ import BusinessHall from './components/BusinessHall';
 import AssetDigitalization from './components/AssetDigitalization';
 import RuleEngine from './components/RuleEngine';
 import ReportCenterEnhanced from './components/ReportCenterEnhanced';
+import ReportsHomePage from './components/ReportsHomePage';
+import ReportsStandardPage from './components/ReportsStandardPage';
+import ReportsCustomPage from './components/ReportsCustomPage';
+import ReportsLogsPage from './components/ReportsLogsPage';
 import CommercialHousing from './components/CommercialHousing';
 import CommercialManagementHome from './components/CommercialManagementHome';
 import CommercialManagementOverview from './components/CommercialManagementOverview';
@@ -133,7 +137,11 @@ export type View =
   | 'public-house-quota'
   | 'public-house-room-usage'
   | 'public-house-commercial'
-  | 'reports';
+  | 'reports'
+  | 'reports-home'
+  | 'reports-standard'
+  | 'reports-custom'
+  | 'reports-logs';
   
 
 const viewToPath: Record<View, string> = {
@@ -192,6 +200,10 @@ const viewToPath: Record<View, string> = {
   'public-house-room-usage': '/hall/public-house-query/room-usage',
   'public-house-commercial': '/hall/public-house-query/commercial',
   reports: '/hall/reports',
+  'reports-home': '/hall/reports/home',
+  'reports-standard': '/hall/reports/standard',
+  'reports-custom': '/hall/reports/custom',
+  'reports-logs': '/hall/reports/logs',
   rules: '/rules',
   'rules-quota': '/rules/quota',
   'rules-fee': '/rules/fee',
@@ -223,7 +235,7 @@ const App: React.FC = () => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   // Helper to determine active section
-  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'maintenance-home', 'maintenance-repair', 'maintenance-property', 'maintenance-stats', 'inventory', 'inventory-home', 'inventory-tasks', 'inventory-discrepancies', 'inventory-analytics', 'public-house-query', 'public-house-home', 'public-house-one-person-multi-room', 'public-house-one-room-multi-person', 'public-house-dept-overview', 'public-house-quota', 'public-house-room-usage', 'public-house-commercial', 'reports'].includes(currentView);
+  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'maintenance-home', 'maintenance-repair', 'maintenance-property', 'maintenance-stats', 'inventory', 'inventory-home', 'inventory-tasks', 'inventory-discrepancies', 'inventory-analytics', 'public-house-query', 'public-house-home', 'public-house-one-person-multi-room', 'public-house-one-room-multi-person', 'public-house-dept-overview', 'public-house-quota', 'public-house-room-usage', 'public-house-commercial', 'reports', 'reports-home', 'reports-standard', 'reports-custom', 'reports-logs'].includes(currentView);
   const isHallSection = currentView === 'hall' || isHallModule;
   const isDigitalModule = ['digital-building', 'digital-room'].includes(currentView);
   const isDigitalSection = currentView === 'digital' || isDigitalModule;
@@ -297,7 +309,11 @@ const App: React.FC = () => {
       case 'maintenance-repair': return <MaintenanceRepair userRole={userRole} />;
       case 'maintenance-property': return <MaintenanceProperty userRole={userRole} />;
       case 'maintenance-stats': return <MaintenanceStats userRole={userRole} />;
-      case 'reports': return <ReportCenterEnhanced userRole={userRole} />;
+      case 'reports': return <Navigate to="/hall/reports/home" replace />;
+      case 'reports-home': return <ReportsHomePage onNavigate={setCurrentView} />;
+      case 'reports-standard': return <ReportsStandardPage userRole={userRole} />;
+      case 'reports-custom': return <ReportsCustomPage userRole={userRole} />;
+      case 'reports-logs': return <ReportsLogsPage userRole={userRole} />;
       
       // Asset Digitalization (Sub-views)
       case 'digital':
@@ -467,6 +483,10 @@ const App: React.FC = () => {
         case 'inventory': return <>{hallCrumb} <span className="text-[#1f2329]"> / 房产盘点核查</span></>;
         case 'public-house-query': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公房综合查询</span></>;
         case 'reports': return <>{hallCrumb} <span className="text-[#1f2329]"> / 统计报表中心</span></>;
+        case 'reports-home': return <>{hallCrumb} <span className="text-[#1f2329]"> / 统计报表中心</span></>;
+        case 'reports-standard': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('reports-home')}> / 统计报表中心</span> <span className="text-[#1f2329]"> / 教育部高基表</span></>;
+        case 'reports-custom': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('reports-home')}> / 统计报表中心</span> <span className="text-[#1f2329]"> / 自定义报表</span></>;
+        case 'reports-logs': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('reports-home')}> / 统计报表中心</span> <span className="text-[#1f2329]"> / 操作日志</span></>;
         default: return '未知模块';
     }
   };
@@ -576,7 +596,16 @@ const App: React.FC = () => {
         { id: 'public-house-commercial', label: '商用房查询', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
       ],
     },
-    { id: 'reports', label: '统计报表中心', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+    {
+      id: 'reports',
+      label: '统计报表中心',
+      roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin],
+      children: [
+        { id: 'reports-standard', label: '教育部高基表', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'reports-custom', label: '自定义报表', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+        { id: 'reports-logs', label: '操作日志', roles: [UserRole.AssetAdmin, UserRole.CollegeAdmin] },
+      ],
+    },
   ];
 
   const digitalSubMenus: { id: View; label: string; }[] = [
@@ -652,6 +681,7 @@ const App: React.FC = () => {
                     item.id === 'maintenance' ? 'maintenance-home' :
                     item.id === 'public-house-query' ? 'public-house-home' :
                     item.id === 'inventory' ? 'inventory-home' :
+                    item.id === 'reports' ? 'reports-home' :
                     item.id;
                   const groupViews = [groupHomeView, ...item.children.map(c => c.id)];
                   const isGroupModule = groupViews.includes(currentView);
