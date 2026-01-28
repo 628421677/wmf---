@@ -51,6 +51,7 @@ import { upsertRoomsFromProject } from '../utils/assetRoomSync';
 
 interface AssetTransferProps {
   userRole: UserRole;
+  initialDetailTab?: 'form' | 'split' | 'gaojibiao' | 'rooms' | 'audit';
 }
 
 // localStorage hook
@@ -76,13 +77,13 @@ function useLocalStorage<T>(key: string, initialValue: T) {
   return [storedValue, setValue] as const;
 }
 
-const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole }) => {
+const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole, initialDetailTab = 'form' }) => {
   const [projects, setProjects] = useLocalStorage<Project[]>('uniassets-projects-v2', MOCK_PROJECTS);
   const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('uniassets-audit-logs', []);
     const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [detailTab, setDetailTab] = useState<'form' | 'split' | 'gaojibiao' | 'rooms' | 'audit'>('form');
+  const [detailTab, setDetailTab] = useState<'form' | 'split' | 'gaojibiao' | 'rooms' | 'audit'>(initialDetailTab);
   const [confirmAction, setConfirmAction] = useState<{ project: Project; action: string } | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;

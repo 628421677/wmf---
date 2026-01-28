@@ -14,6 +14,9 @@ import {
 
 import Dashboard from './components/Dashboard';
 import AssetTransfer from './components/AssetTransfer';
+import AssetsHomePage from './components/AssetsHomePage';
+import AssetsApplyPage from './components/AssetsApplyPage';
+import AssetsReviewPage from './components/AssetsReviewPage';
 import HousingAllocation from './components/HousingAllocation';
 import HousingAllocationApproval from './components/HousingAllocationApproval';
 import HousingAllocationResource from './components/HousingAllocationResource';
@@ -85,7 +88,15 @@ export type View =
 
   | 'hall'         // Business Hall (Hub)
   // Sub-modules of Hall
-  | 'assets' 
+  | 'assets'
+  | 'assets-home'
+  | 'assets-project-new'
+  | 'assets-stock-import'
+  | 'assets-apply'
+  | 'assets-review'
+  | 'assets-gaojibiao'
+  | 'assets-room-functions'
+  | 'assets-audit-log'
   | 'allocation' 
   | 'allocation-home'
   | 'allocation-approval'
@@ -149,6 +160,14 @@ const viewToPath: Record<View, string> = {
   todos: '/todos',
   hall: '/hall',
   assets: '/hall/assets',
+  'assets-home': '/hall/assets/home',
+  'assets-project-new': '/hall/assets/project-new',
+  'assets-stock-import': '/hall/assets/stock-import',
+  'assets-apply': '/hall/assets/apply',
+  'assets-review': '/hall/assets/review',
+  'assets-gaojibiao': '/hall/assets/gaojibiao',
+  'assets-room-functions': '/hall/assets/room-functions',
+  'assets-audit-log': '/hall/assets/audit-log',
   allocation: '/hall/allocation',
   'allocation-home': '/hall/allocation/home',
   'allocation-approval': '/hall/allocation/approval',
@@ -235,7 +254,7 @@ const App: React.FC = () => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   // Helper to determine active section
-  const isHallModule = ['assets', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'maintenance-home', 'maintenance-repair', 'maintenance-property', 'maintenance-stats', 'inventory', 'inventory-home', 'inventory-tasks', 'inventory-discrepancies', 'inventory-analytics', 'public-house-query', 'public-house-home', 'public-house-one-person-multi-room', 'public-house-one-room-multi-person', 'public-house-dept-overview', 'public-house-quota', 'public-house-room-usage', 'public-house-commercial', 'reports', 'reports-home', 'reports-standard', 'reports-custom', 'reports-logs'].includes(currentView);
+  const isHallModule = ['assets', 'assets-home', 'assets-project-new', 'assets-stock-import', 'assets-apply', 'assets-review', 'assets-gaojibiao', 'assets-room-functions', 'assets-audit-log', 'allocation', 'allocation-home', 'allocation-approval', 'allocation-resource', 'allocation-adjust', 'allocation-records', 'allocation-analytics', 'fees', 'fees-home', 'fees-overview', 'fees-persons', 'fees-bills', 'fees-payments', 'fees-reminders', 'commercial', 'commercial-mgmt', 'commercial-home', 'commercial-overview', 'commercial-spaces', 'commercial-contracts', 'commercial-rent', 'commercial-analytics', 'residence-mgmt', 'residence-home', 'apartment-overview', 'apartment-applications', 'apartment-rooms', 'apartment-utilities', 'apartment-deposits', 'maintenance', 'maintenance-home', 'maintenance-repair', 'maintenance-property', 'maintenance-stats', 'inventory', 'inventory-home', 'inventory-tasks', 'inventory-discrepancies', 'inventory-analytics', 'public-house-query', 'public-house-home', 'public-house-one-person-multi-room', 'public-house-one-room-multi-person', 'public-house-dept-overview', 'public-house-quota', 'public-house-room-usage', 'public-house-commercial', 'reports', 'reports-home', 'reports-standard', 'reports-custom', 'reports-logs'].includes(currentView);
   const isHallSection = currentView === 'hall' || isHallModule;
   const isDigitalModule = ['digital-building', 'digital-room'].includes(currentView);
   const isDigitalSection = currentView === 'digital' || isDigitalModule;
@@ -289,7 +308,15 @@ const App: React.FC = () => {
       case 'hall': return <BusinessHall userRole={userRole} onNavigate={setCurrentView} />;
       
       // Hall Sub-modules with UserRole passed down
-      case 'assets': return <AssetTransfer userRole={userRole} />;
+      case 'assets': return <Navigate to="/hall/assets/home" replace />;
+      case 'assets-home': return <AssetsHomePage onNavigate={setCurrentView} />;
+      case 'assets-project-new': return <AssetTransfer userRole={userRole} initialDetailTab="form" />;
+      case 'assets-stock-import': return <AssetTransfer userRole={userRole} initialDetailTab="form" />;
+      case 'assets-apply': return <AssetsApplyPage userRole={userRole} />;
+      case 'assets-review': return <AssetsReviewPage userRole={userRole} />;
+      case 'assets-gaojibiao': return <AssetTransfer userRole={userRole} initialDetailTab="gaojibiao" />;
+      case 'assets-room-functions': return <AssetTransfer userRole={userRole} initialDetailTab="rooms" />;
+      case 'assets-audit-log': return <AssetTransfer userRole={userRole} initialDetailTab="audit" />;
       case 'allocation': return <Navigate to="/hall/allocation/home" replace />;
       case 'allocation-home': return <HousingAllocationHome userRole={userRole} onNavigate={setCurrentView} />;
       case 'allocation-approval': return <HousingAllocationApproval userRole={userRole} />;
@@ -444,7 +471,23 @@ const App: React.FC = () => {
         case 'rules-alert': return <>{rulesCrumb} <span className="text-[#1f2329]"> / 预警规则</span></>;
 
         // Hall Breadcrumbs
-        case 'assets': return <>{hallCrumb} <span className="text-[#1f2329]"> / 资产转固与管理</span></>;
+        case 'assets':
+        case 'assets-home':
+          return <>{hallCrumb} <span className="text-[#1f2329]"> / 资产转固与管理</span></>;
+        case 'assets-project-new':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('assets-home')}> / 资产转固与管理</span> <span className="text-[#1f2329]"> / 新建工程项目</span></>;
+        case 'assets-stock-import':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('assets-home')}> / 资产转固与管理</span> <span className="text-[#1f2329]"> / 存量房产导入</span></>;
+        case 'assets-apply':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('assets-home')}> / 资产转固与管理</span> <span className="text-[#1f2329]"> / 转固申请</span></>;
+        case 'assets-review':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('assets-home')}> / 资产转固与管理</span> <span className="text-[#1f2329]"> / 转固审核</span></>;
+        case 'assets-gaojibiao':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('assets-home')}> / 资产转固与管理</span> <span className="text-[#1f2329]"> / 高基表映射</span></>;
+        case 'assets-room-functions':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('assets-home')}> / 资产转固与管理</span> <span className="text-[#1f2329]"> / 房间功能划分</span></>;
+        case 'assets-audit-log':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('assets-home')}> / 资产转固与管理</span> <span className="text-[#1f2329]"> / 操作记录</span></>;
         case 'allocation': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公用房归口调配管理</span></>;
         case 'allocation-home': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公用房归口调配管理</span></>;
         case 'allocation-approval': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('allocation-home')}> / 公用房归口调配管理</span> <span className="text-[#1f2329]"> / 用房审批</span></>;
@@ -534,7 +577,20 @@ const App: React.FC = () => {
   };
 
   const hallSubMenus: HallMenuItem[] = [
-    { id: 'assets', label: '资产转固与管理', roles: [UserRole.AssetAdmin] },
+    {
+      id: 'assets',
+      label: '资产转固与管理',
+      roles: [UserRole.AssetAdmin],
+      children: [
+        { id: 'assets-project-new', label: '新建工程项目', roles: [UserRole.AssetAdmin] },
+        { id: 'assets-stock-import', label: '存量房产导入', roles: [UserRole.AssetAdmin] },
+        { id: 'assets-apply', label: '转固申请', roles: [UserRole.AssetAdmin] },
+        { id: 'assets-review', label: '转固审核', roles: [UserRole.AssetAdmin] },
+        { id: 'assets-gaojibiao', label: '高基表映射', roles: [UserRole.AssetAdmin] },
+        { id: 'assets-room-functions', label: '房间功能划分', roles: [UserRole.AssetAdmin] },
+        { id: 'assets-audit-log', label: '操作记录', roles: [UserRole.AssetAdmin] },
+      ],
+    },
 
     {
       id: 'allocation',
@@ -704,6 +760,7 @@ const App: React.FC = () => {
                     item.id === 'commercial-mgmt' ? 'commercial-home' :
                     item.id === 'residence-mgmt' ? 'residence-home' :
                     item.id === 'maintenance' ? 'maintenance-home' :
+                    item.id === 'assets' ? 'assets-home' :
                     item.id === 'public-house-query' ? 'public-house-home' :
                     item.id === 'inventory' ? 'inventory-home' :
                     item.id === 'reports' ? 'reports-home' :
