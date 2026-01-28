@@ -480,8 +480,33 @@ const App: React.FC = () => {
         case 'maintenance-repair': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('maintenance-home')}> / 维修与物业服务</span> <span className="text-[#1f2329]"> / 维修工单</span></>;
         case 'maintenance-property': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('maintenance-home')}> / 维修与物业服务</span> <span className="text-[#1f2329]"> / 物业服务</span></>;
         case 'maintenance-stats': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('maintenance-home')}> / 维修与物业服务</span> <span className="text-[#1f2329]"> / 数据统计</span></>;
-        case 'inventory': return <>{hallCrumb} <span className="text-[#1f2329]"> / 房产盘点核查</span></>;
-        case 'public-house-query': return <>{hallCrumb} <span className="text-[#1f2329]"> / 公房综合查询</span></>;
+
+        case 'inventory':
+        case 'inventory-home':
+          return <>{hallCrumb} <span className="text-[#1f2329]"> / 房产盘点核查</span></>;
+        case 'inventory-tasks':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('inventory-home')}> / 房产盘点核查</span> <span className="text-[#1f2329]"> / 盘点任务</span></>;
+        case 'inventory-discrepancies':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('inventory-home')}> / 房产盘点核查</span> <span className="text-[#1f2329]"> / 差异处理</span></>;
+        case 'inventory-analytics':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('inventory-home')}> / 房产盘点核查</span> <span className="text-[#1f2329]"> / 统计分析</span></>;
+
+        case 'public-house-query':
+        case 'public-house-home':
+          return <>{hallCrumb} <span className="text-[#1f2329]"> / 公房综合查询</span></>;
+        case 'public-house-one-person-multi-room':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('public-house-home')}> / 公房综合查询</span> <span className="text-[#1f2329]"> / 一人多房</span></>;
+        case 'public-house-one-room-multi-person':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('public-house-home')}> / 公房综合查询</span> <span className="text-[#1f2329]"> / 一房多人</span></>;
+        case 'public-house-dept-overview':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('public-house-home')}> / 公房综合查询</span> <span className="text-[#1f2329]"> / 部门概况</span></>;
+        case 'public-house-quota':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('public-house-home')}> / 公房综合查询</span> <span className="text-[#1f2329]"> / 定额查询</span></>;
+        case 'public-house-room-usage':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('public-house-home')}> / 公房综合查询</span> <span className="text-[#1f2329]"> / 公用房查询</span></>;
+        case 'public-house-commercial':
+          return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('public-house-home')}> / 公房综合查询</span> <span className="text-[#1f2329]"> / 商用房查询</span></>;
+
         case 'reports': return <>{hallCrumb} <span className="text-[#1f2329]"> / 统计报表中心</span></>;
         case 'reports-home': return <>{hallCrumb} <span className="text-[#1f2329]"> / 统计报表中心</span></>;
         case 'reports-standard': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('reports-home')}> / 统计报表中心</span> <span className="text-[#1f2329]"> / 教育部高基表</span></>;
