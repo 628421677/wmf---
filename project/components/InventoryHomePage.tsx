@@ -1,15 +1,5 @@
 import React from 'react';
-import { BarChart3, ClipboardCheck, FileDiff, ArrowRight } from 'lucide-react';
-
-const StatCard = ({ title, value, hint }: { title: string; value: string | number; hint?: string }) => {
-  return (
-    <div className="bg-white border rounded-lg p-4">
-      <p className="text-sm text-[#646a73]">{title}</p>
-      <p className="text-2xl font-bold text-[#1f2329]">{value}</p>
-      {hint ? <p className="text-xs text-[#8f959e] mt-1">{hint}</p> : null}
-    </div>
-  );
-};
+import { ArrowRight, BarChart3, ClipboardCheck, FileDiff } from 'lucide-react';
 
 const ShortcutCard = ({
   title,
@@ -25,19 +15,15 @@ const ShortcutCard = ({
   return (
     <button
       onClick={onClick}
-      className="text-left bg-white border rounded-lg p-4 hover:border-[#3370ff] hover:shadow-sm transition-all"
+      className="group relative bg-white p-6 rounded-lg shadow-sm border border-[#dee0e3] hover:shadow-md hover:border-[#3370ff] transition-all text-left"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#3370ff]/10 flex items-center justify-center">
-            <Icon size={18} className="text-[#3370ff]" />
-          </div>
-          <div>
-            <p className="font-semibold text-[#1f2329]">{title}</p>
-            <p className="text-sm text-[#646a73] mt-1">{description}</p>
-          </div>
-        </div>
-        <ArrowRight size={16} className="text-[#8f959e] mt-1" />
+      <div className="w-12 h-12 bg-[#e1eaff] rounded-lg flex items-center justify-center mb-4 transition-transform">
+        <Icon className="text-[#3370ff]" size={24} />
+      </div>
+      <h3 className="text-lg font-bold text-[#1f2329] mb-2 group-hover:text-[#3370ff] transition-colors">{title}</h3>
+      <p className="text-sm text-[#8f959e] leading-relaxed mb-6">{description}</p>
+      <div className="absolute bottom-6 right-6 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all">
+        <ArrowRight className="text-[#3370ff]" size={20} />
       </div>
     </button>
   );
@@ -45,35 +31,28 @@ const ShortcutCard = ({
 
 const InventoryHomePage: React.FC<{ onNavigate: (view: any) => void }> = ({ onNavigate }) => {
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div>
-        <h2 className="text-2xl font-bold text-[#1f2329]">房产盘点核查</h2>
-        <p className="text-[#646a73]">总览盘点进度与差异闭环情况，并快速进入任务/差异/统计模块。</p>
+    <div className="space-y-8 animate-fade-in">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold text-[#1f2329]">房产盘点核查</h1>
+        <p className="text-[#646a73]">请选择您需要办理的子模块。</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <StatCard title="进行中任务" value={2} hint="本期处于执行阶段" />
-        <StatCard title="待处理差异" value={3} hint="建议优先处理逾期" />
-        <StatCard title="已闭环" value={6} hint="累计完成闭环" />
-        <StatCard title="总体完成率" value="75%" hint="按已盘/应盘估算" />
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <ShortcutCard
           title="盘点任务"
-          description="发布任务、执行盘点、查看进度"
+          description="发布任务、执行盘点、查看进度。"
           icon={ClipboardCheck}
           onClick={() => onNavigate('inventory-tasks')}
         />
         <ShortcutCard
           title="差异处理"
-          description="问题下发、整改跟踪、复核闭环"
+          description="问题下发、整改跟踪、复核闭环。"
           icon={FileDiff}
           onClick={() => onNavigate('inventory-discrepancies')}
         />
         <ShortcutCard
           title="统计分析"
-          description="进度统计、类型分布、趋势分析"
+          description="进度统计、类型分布、状态统计。"
           icon={BarChart3}
           onClick={() => onNavigate('inventory-analytics')}
         />
@@ -83,4 +62,3 @@ const InventoryHomePage: React.FC<{ onNavigate: (view: any) => void }> = ({ onNa
 };
 
 export default InventoryHomePage;
-

@@ -52,6 +52,9 @@ import ApartmentManagementUtilities from './components/ApartmentManagementUtilit
 import ApartmentManagementDeposits from './components/ApartmentManagementDeposits';
 import InventoryCheckEnhanced from './components/InventoryCheckEnhanced';
 import InventoryHomePage from './components/InventoryHomePage';
+import InventoryTasksPage from './components/InventoryTasksPage';
+import InventoryDiscrepanciesPage from './components/InventoryDiscrepanciesPage';
+import InventoryAnalyticsPage from './components/InventoryAnalyticsPage';
 import PublicHouseQueryHome from './components/PublicHouseQueryHome';
 import PublicHouseOnePersonMultiRoomQuery from './components/PublicHouseOnePersonMultiRoomQuery';
 import PublicHouseOneRoomMultiPersonQuery from './components/PublicHouseOneRoomMultiPersonQuery';
@@ -330,9 +333,11 @@ const App: React.FC = () => {
       case 'inventory-home':
         return <InventoryHomePage onNavigate={setCurrentView} />;
       case 'inventory-tasks':
+        return <InventoryTasksPage />;
       case 'inventory-discrepancies':
+        return <InventoryDiscrepanciesPage />;
       case 'inventory-analytics':
-        return <InventoryCheckEnhanced />;
+        return <InventoryAnalyticsPage />;
       case 'public-house-query':
         return <Navigate to="/hall/public-house-query/home" replace />;
       case 'public-house-home':
