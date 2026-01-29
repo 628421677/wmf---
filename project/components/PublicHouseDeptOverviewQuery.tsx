@@ -15,3 +15,4 @@ const PublicHouseDeptOverviewQuery: React.FC = () => {
 export default PublicHouseDeptOverviewQuery;
 
 
+

@@ -78,3 +78,4 @@ const PublicHouseQueryHome: React.FC<PublicHouseQueryHomeProps> = ({ onNavigate 
 export default PublicHouseQueryHome;
 
 
+

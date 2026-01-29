@@ -15,3 +15,4 @@ const PublicHouseQuotaQuery: React.FC = () => {
 export default PublicHouseQuotaQuery;
 
 
+

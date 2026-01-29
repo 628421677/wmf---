@@ -121,3 +121,4 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
 
 export default AssetsApplyPage;
 
+
