@@ -14,6 +14,7 @@ import {
 
 import Dashboard from './components/Dashboard';
 import AssetTransfer from './components/AssetTransfer';
+import AssetsProjectNewPage from './components/AssetsProjectNewPage';
 import AssetsHomePage from './components/AssetsHomePage';
 import AssetsApplyPage from './components/AssetsApplyPage';
 import AssetsReviewPage from './components/AssetsReviewPage';
@@ -312,7 +313,7 @@ const App: React.FC = () => {
       // Hall Sub-modules with UserRole passed down
       case 'assets': return <Navigate to="/hall/assets/home" replace />;
       case 'assets-home': return <AssetsHomePage onNavigate={setCurrentView} />;
-      case 'assets-project-new': return <AssetTransfer userRole={userRole} initialDetailTab="form" />;
+      case 'assets-project-new': return <AssetsProjectNewPage userRole={userRole} />;
       case 'assets-stock-import': return <AssetTransfer userRole={userRole} initialDetailTab="form" />;
       case 'assets-apply': return <AssetsApplyPage userRole={userRole} />;
       case 'assets-review': return <AssetsReviewPage userRole={userRole} />;

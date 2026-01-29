@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { computeAttachmentCompletion, getStageAttachmentRequirements } from '../utils/assetAttachmentRequirements';
 import { getAssetStatusColor, getAssetStatusLabel } from '../utils/assetStatus';
 import {
@@ -280,20 +281,17 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole, initialDetailTa
 
   return (
     <div className="space-y-6 animate-fade-in relative">
-      {/* 新建/编辑项目模态框 */}
-      {isProjectFormOpen && (
+      {/* 编辑项目模态框 */}
+      {isProjectFormOpen && editingProject && (
         <NewProjectModal
-          mode={editingProject ? 'edit' : 'create'}
+          mode="edit"
           initialProject={editingProject}
           onClose={() => {
             setIsProjectFormOpen(false);
             setEditingProject(null);
           }}
-          onAddProject={(newProject) => {
-            setProjects(prev => [newProject, ...prev]);
-            logAudit('create', 'project', newProject.id, newProject.name);
-            setIsProjectFormOpen(false);
-            setEditingProject(null);
+          onAddProject={() => {
+            // no-op (edit mode only)
           }}
           onUpdateProject={(updatedProject) => {
             setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
@@ -395,14 +393,12 @@ const AssetTransfer: React.FC<AssetTransferProps> = ({ userRole, initialDetailTa
         </div>
         {userRole === UserRole.AssetAdmin && (
           <div className="flex gap-3">
-            <button
-              onClick={() => {
-                setIsProjectFormOpen(true);
-              }}
+            <Link
+              to="/hall/assets/project-new"
               className="bg-white border border-[#3370ff] text-[#3370ff] px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium hover:bg-[#e1eaff] transition"
             >
               <Plus size={18} /> 新建工程项目
-            </button>
+            </Link>
             <button className="bg-[#3370ff] hover:bg-[#285cc9] text-white px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium transition">
               <Download size={18} /> 批量导入
             </button>
