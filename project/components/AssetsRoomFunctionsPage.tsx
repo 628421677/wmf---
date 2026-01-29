@@ -9,6 +9,22 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [asInfrastructureDept, setAsInfrastructureDept] = useState(false);
+
+  const isReadOnly = useMemo(
+    () => selectedProject && (selectedProject.isArchived || selectedProject.status === AssetStatus.Archived),
+    [selectedProject]
+  );
+
+  const canEditAfterArchived = useMemo(
+    () => userRole === UserRole.AssetAdmin && !asInfrastructureDept,
+    [userRole, asInfrastructureDept]
+  );
+
+  const isEditable = useMemo(
+    () => !isReadOnly || (isReadOnly && canEditAfterArchived),
+    [isReadOnly, canEditAfterArchived]
+  );
 
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -91,6 +107,21 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
               <div>
                 <h3 className="text-lg font-bold text-[#1f2329]">房间功能划分：{selectedProject.name}</h3>
                 <p className="text-sm text-[#646a73] mt-1">{selectedProject.id}</p>
+                <div className="mt-2 flex flex-wrap gap-3 items-center">
+                  <label className="flex items-center gap-2 text-xs text-[#646a73] select-none">
+                    <input
+                      type="checkbox"
+                      checked={asInfrastructureDept}
+                      onChange={e => setAsInfrastructureDept(e.target.checked)}
+                    />
+                    以基建处身份
+                  </label>
+                </div>
+                {!isEditable && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 text-sm text-yellow-800 rounded-r-lg mt-2">
+                    <p><span className="font-bold">只读模式</span>：此项目已归档，您只能查看信息。如需修改，请联系资产管理员。</p>
+                  </div>
+                )}
               </div>
               <button onClick={() => setSelectedProject(null)} className="text-[#646a73] hover:text-[#1f2329]"><X size={20} /></button>
             </div>
@@ -105,6 +136,7 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
                 confirmedAt={selectedProject.roomFunctionPlanConfirmedAt}
                 confirmedBy={selectedProject.roomFunctionPlanConfirmedBy}
                 onConfirm={() => {
+                  if (!isEditable) return;
                   const at = new Date().toISOString();
                   handleUpdateProject({
                     ...selectedProject,
@@ -113,7 +145,7 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
                     roomFunctionPlanConfirmedBy: '资产管理员',
                   });
                 }}
-                disabled={false}
+                disabled={!isEditable}
                 userRole={userRole}
               />
             </div>

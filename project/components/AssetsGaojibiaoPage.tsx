@@ -8,6 +8,22 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [asInfrastructureDept, setAsInfrastructureDept] = useState(false);
+  
+  // 计算是否只读
+  const isReadOnly = useMemo(() => 
+    selectedProject && (selectedProject.isArchived || selectedProject.status === AssetStatus.Archived)
+  , [selectedProject]);
+  
+  // 计算是否允许在归档后编辑
+  const canEditAfterArchived = useMemo(() => 
+    userRole === UserRole.AssetAdmin && !asInfrastructureDept
+  , [userRole, asInfrastructureDept]);
+  
+  // 是否可以编辑
+  const isEditable = useMemo(() => 
+    !isReadOnly || (isReadOnly && canEditAfterArchived)
+  , [isReadOnly, canEditAfterArchived]);
 
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -29,6 +45,7 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
 
   const handleSaveGaojibiao = () => {
     if (!selectedProject) return;
+    if (isReadOnly && !canEditAfterArchived) return;
 
     const updatedProject = { ...(selectedProject as any), gaojibiaoData: gaojibiaoForm } as Project;
 
@@ -103,38 +120,56 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
               <div>
                 <h3 className="text-lg font-bold text-[#1f2329]">高基表映射：{selectedProject.name}</h3>
                 <p className="text-sm text-[#646a73] mt-1">{selectedProject.id}</p>
+                <div className="mt-2 flex flex-wrap gap-3 items-center">
+                  <label className="flex items-center gap-2 text-xs text-[#646a73] select-none">
+                    <input
+                      type="checkbox"
+                      checked={asInfrastructureDept}
+                      onChange={e => setAsInfrastructureDept(e.target.checked)}
+                    />
+                    以基建处身份
+                  </label>
+                </div>
               </div>
               <button onClick={() => setSelectedProject(null)} className="text-[#646a73] hover:text-[#1f2329]"><X size={20} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="bg-[#f9fafb] border border-[#dee0e3] rounded-lg p-4">
                 <h4 className="font-medium text-[#1f2329] mb-4">高基表字段映射</h4>
+                                {!isEditable && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 text-sm text-yellow-800 rounded-r-lg mb-4">
+                    <p><span className="font-bold">只读模式</span>：此项目已归档，您只能查看信息。如需修改，请联系资产管理员。</p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs text-[#646a73] mb-1">资产编号</label>
                     <input
                       value={gaojibiaoForm.assetCode || ''}
-                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, assetCode: e.target.value }))}
-                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      onChange={(e) => isEditable && setGaojibiaoForm((prev) => ({ ...prev, assetCode: e.target.value }))}
+                      className={`w-full border ${isEditable ? 'border-[#dee0e3]' : 'border-gray-200 bg-gray-50'} rounded px-3 py-2 text-sm`}
                       placeholder="高基表资产编号"
+                      readOnly={!isEditable}
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-[#646a73] mb-1">资产名称</label>
                     <input
                       value={gaojibiaoForm.assetName || ''}
-                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, assetName: e.target.value }))}
-                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      onChange={(e) => isEditable && setGaojibiaoForm((prev) => ({ ...prev, assetName: e.target.value }))}
+                      className={`w-full border ${isEditable ? 'border-[#dee0e3]' : 'border-gray-200 bg-gray-50'} rounded px-3 py-2 text-sm`}
                       placeholder="高基表资产名称"
+                      readOnly={!isEditable}
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-[#646a73] mb-1">使用部门</label>
                     <input
                       value={gaojibiaoForm.department || ''}
-                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, department: e.target.value }))}
-                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      onChange={(e) => isEditable && setGaojibiaoForm((prev) => ({ ...prev, department: e.target.value }))}
+                      className={`w-full border ${isEditable ? 'border-[#dee0e3]' : 'border-gray-200 bg-gray-50'} rounded px-3 py-2 text-sm`}
                       placeholder="资产使用部门"
+                      readOnly={!isEditable}
                     />
                   </div>
                   <div>
@@ -142,9 +177,10 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
                     <input
                       type="number"
                       value={gaojibiaoForm.serviceLife || ''}
-                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, serviceLife: Number(e.target.value) }))}
-                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      onChange={(e) => isEditable && setGaojibiaoForm((prev) => ({ ...prev, serviceLife: Number(e.target.value) }))}
+                      className={`w-full border ${isEditable ? 'border-[#dee0e3]' : 'border-gray-200 bg-gray-50'} rounded px-3 py-2 text-sm`}
                       placeholder="资产使用年限"
+                      readOnly={!isEditable}
                     />
                   </div>
                   <div>
@@ -152,9 +188,10 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
                     <input
                       type="number"
                       value={gaojibiaoForm.originalValue || ''}
-                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, originalValue: Number(e.target.value) }))}
-                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      onChange={(e) => isEditable && setGaojibiaoForm((prev) => ({ ...prev, originalValue: Number(e.target.value) }))}
+                      className={`w-full border ${isEditable ? 'border-[#dee0e3]' : 'border-gray-200 bg-gray-50'} rounded px-3 py-2 text-sm`}
                       placeholder="资产原值"
+                      readOnly={!isEditable}
                     />
                   </div>
                   <div>
@@ -163,9 +200,10 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
                       type="number"
                       step={0.01}
                       value={gaojibiaoForm.residualRate || ''}
-                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, residualRate: Number(e.target.value) }))}
-                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      onChange={(e) => isEditable && setGaojibiaoForm((prev) => ({ ...prev, residualRate: Number(e.target.value) }))}
+                      className={`w-full border ${isEditable ? 'border-[#dee0e3]' : 'border-gray-200 bg-gray-50'} rounded px-3 py-2 text-sm`}
                       placeholder="0.05"
+                      readOnly={!isEditable}
                     />
                   </div>
                 </div>
@@ -173,7 +211,8 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
                 <div className="mt-4 flex justify-end">
                   <button
                     onClick={handleSaveGaojibiao}
-                    className="px-3 py-1.5 bg-[#3370ff] text-white rounded-md text-sm hover:bg-[#285cc9] flex items-center gap-1"
+                    className={`px-3 py-1.5 ${isEditable ? 'bg-[#3370ff] hover:bg-[#285cc9]' : 'bg-gray-300 cursor-not-allowed'} text-white rounded-md text-sm flex items-center gap-1`}
+                    disabled={!isEditable}
                   >
                     <CheckCircle size={14} /> 保存映射信息
                   </button>
