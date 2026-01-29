@@ -1,14 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { FileSpreadsheet, Search, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, Search, X } from 'lucide-react';
 import { useAssetData } from '../hooks/useAssetData';
-import { AssetStatus, Project, UserRole, GaojibiaoMapping } from '../types';
-
-const InfoItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div>
-    <p className="text-sm text-[#646a73]">{label}</p>
-    <p className="font-medium text-[#1f2329]">{value}</p>
-  </div>
-);
+import { AssetStatus, GaojibiaoMapping, Project, UserRole } from '../types';
 
 const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
   const { projects, setProjects, logAudit } = useAssetData();
@@ -87,7 +80,7 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
                     className="text-[#3370ff] hover:underline text-xs flex items-center gap-1"
                     onClick={() => setSelectedProject(p)}
                   >
-                    <FileSpreadsheet size={14} /> 映射
+                    <CheckCircle size={14} /> 映射
                   </button>
                 </td>
               </tr>
@@ -114,29 +107,82 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
               <button onClick={() => setSelectedProject(null)} className="text-[#646a73] hover:text-[#1f2329]"><X size={20} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="grid grid-cols-3 gap-6">
-                <InfoItem label="511-学校产权校舍建筑面积" value={`${gaojibiaoForm.area || '-'}`} />
-                <InfoItem label="512-固定资产总额" value={`¥${gaojibiaoForm.totalValue || '-'}`} />
-                <InfoItem label="513-教学科研仪器设备值" value={`¥${gaojibiaoForm.equipmentValue || '-'}`} />
+              <div className="bg-[#f9fafb] border border-[#dee0e3] rounded-lg p-4">
+                <h4 className="font-medium text-[#1f2329] mb-4">高基表字段映射</h4>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs text-[#646a73] mb-1">资产编号</label>
+                    <input
+                      value={gaojibiaoForm.assetCode || ''}
+                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, assetCode: e.target.value }))}
+                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      placeholder="高基表资产编号"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#646a73] mb-1">资产名称</label>
+                    <input
+                      value={gaojibiaoForm.assetName || ''}
+                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, assetName: e.target.value }))}
+                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      placeholder="高基表资产名称"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#646a73] mb-1">使用部门</label>
+                    <input
+                      value={gaojibiaoForm.department || ''}
+                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, department: e.target.value }))}
+                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      placeholder="资产使用部门"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#646a73] mb-1">使用年限</label>
+                    <input
+                      type="number"
+                      value={gaojibiaoForm.serviceLife || ''}
+                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, serviceLife: Number(e.target.value) }))}
+                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      placeholder="资产使用年限"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#646a73] mb-1">原值</label>
+                    <input
+                      type="number"
+                      value={gaojibiaoForm.originalValue || ''}
+                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, originalValue: Number(e.target.value) }))}
+                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      placeholder="资产原值"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#646a73] mb-1">残值率</label>
+                    <input
+                      type="number"
+                      step={0.01}
+                      value={gaojibiaoForm.residualRate || ''}
+                      onChange={(e) => setGaojibiaoForm((prev) => ({ ...prev, residualRate: Number(e.target.value) }))}
+                      className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                      placeholder="0.05"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={handleSaveGaojibiao}
+                    className="px-3 py-1.5 bg-[#3370ff] text-white rounded-md text-sm hover:bg-[#285cc9] flex items-center gap-1"
+                  >
+                    <CheckCircle size={14} /> 保存映射信息
+                  </button>
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">校舍建筑面积 (m²)</label>
-                  <input type="number" value={gaojibiaoForm.area || ''} onChange={e => setGaojibiaoForm(p => ({ ...p, area: Number(e.target.value) }))} className="w-full border rounded px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">固定资产总额 (元)</label>
-                  <input type="number" value={gaojibiaoForm.totalValue || ''} onChange={e => setGaojibiaoForm(p => ({ ...p, totalValue: Number(e.target.value) }))} className="w-full border rounded px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">仪器设备值 (元)</label>
-                  <input type="number" value={gaojibiaoForm.equipmentValue || ''} onChange={e => setGaojibiaoForm(p => ({ ...p, equipmentValue: Number(e.target.value) }))} className="w-full border rounded px-3 py-2" />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <button onClick={handleSaveGaojibiao} className="px-4 py-2 bg-[#3370ff] text-white rounded text-sm hover:bg-[#285cc9]">
-                  保存映射
-                </button>
+
+              <div className="text-xs text-[#8f959e]">
+                <AlertCircle size={14} className="inline mr-1" />
+                高基表映射信息将用于资产年报上报，请确保信息准确无误
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Layers, Search, X } from 'lucide-react';
 import { useAssetData } from '../hooks/useAssetData';
 import { AssetStatus, Project, UserRole } from '../types';
-import RoomFunctionPlanTab from './RoomFunctionPlanTab'; // Re-using the existing component
+import RoomFunctionPlanTab from './RoomFunctionPlanTab';
 
 const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
   const { projects, setProjects, logAudit } = useAssetData();
@@ -95,7 +95,27 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
               <button onClick={() => setSelectedProject(null)} className="text-[#646a73] hover:text-[#1f2329]"><X size={20} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6">
-              <RoomFunctionPlanTab project={selectedProject} onUpdate={handleUpdateProject} userRole={userRole} />
+              <RoomFunctionPlanTab
+                projectName={selectedProject.name}
+                plan={selectedProject.roomFunctionPlan || []}
+                onChange={(next) => {
+                  handleUpdateProject({ ...selectedProject, roomFunctionPlan: next });
+                }}
+                confirmed={Boolean(selectedProject.roomFunctionPlanConfirmed)}
+                confirmedAt={selectedProject.roomFunctionPlanConfirmedAt}
+                confirmedBy={selectedProject.roomFunctionPlanConfirmedBy}
+                onConfirm={() => {
+                  const at = new Date().toISOString();
+                  handleUpdateProject({
+                    ...selectedProject,
+                    roomFunctionPlanConfirmed: true,
+                    roomFunctionPlanConfirmedAt: at,
+                    roomFunctionPlanConfirmedBy: '资产管理员',
+                  });
+                }}
+                disabled={false}
+                userRole={userRole}
+              />
             </div>
           </div>
         </div>

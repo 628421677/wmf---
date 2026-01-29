@@ -19,6 +19,7 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
     depreciationYears: 50,
   });
 
+
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     return projects
@@ -75,10 +76,13 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                   <span className={`px-2 py-1 rounded text-xs ${getAssetStatusColor(p.status)}`}>{getAssetStatusLabel(p.status)}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       className="text-[#3370ff] hover:underline text-xs flex items-center gap-1"
-                      onClick={() => setSelectedProject(p)}
+                      onClick={() => {
+                        setSelectedProject(p);
+                        setDetailTab('flow');
+                      }}
                     >
                       <Eye size={14} /> 查看详情
                     </button>
@@ -107,6 +111,7 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                     >
                       发起转固申请 <ArrowRight size={14} />
                     </button>
+
                   </div>
                 </td>
               </tr>
@@ -123,14 +128,27 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
       </div>
 
       {selectedProject && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedProject(null)}>
-          <div className="bg-white w-full max-w-4xl rounded-lg shadow-lg max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => {
+            setSelectedProject(null);
+          }}
+        >
+          <div
+            className="bg-white w-full max-w-4xl rounded-lg shadow-lg max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-4 border-b flex items-center justify-between flex-shrink-0">
               <div>
                 <h3 className="font-bold text-[#1f2329]">{selectedProject.name}</h3>
                 <p className="text-xs text-[#646a73]">项目编号：{selectedProject.id}</p>
               </div>
-              <button className="text-[#646a73]" onClick={() => setSelectedProject(null)}>
+              <button
+                className="text-[#646a73]"
+                onClick={() => {
+                  setSelectedProject(null);
+                }}
+              >
                 关闭
               </button>
             </div>
