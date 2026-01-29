@@ -38,8 +38,9 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
 
   const handleUpdateProject = (updatedProject: Project) => {
     setProjects((prev) => prev.map((p) => (p.id === updatedProject.id ? updatedProject : p)));
+
     logAudit('update', 'project', updatedProject.id, updatedProject.name, userRole, {
-      roomFunctionPlan: { old: '...', new: 'updated' },
+      roomFunctionPlan: { old: '...', new: updatedProject.roomFunctionPlan || [] },
     });
   };
 
@@ -130,7 +131,9 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
                 projectName={selectedProject.name}
                 plan={selectedProject.roomFunctionPlan || []}
                 onChange={(next) => {
-                  handleUpdateProject({ ...selectedProject, roomFunctionPlan: next });
+                  const updated = { ...selectedProject, roomFunctionPlan: next };
+                  handleUpdateProject(updated);
+                  setSelectedProject(updated);
                 }}
                 confirmed={Boolean(selectedProject.roomFunctionPlanConfirmed)}
                 confirmedAt={selectedProject.roomFunctionPlanConfirmedAt}
@@ -138,15 +141,18 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
                 onConfirm={() => {
                   if (!isEditable) return;
                   const at = new Date().toISOString();
-                  handleUpdateProject({
+                  const updated = {
                     ...selectedProject,
                     roomFunctionPlanConfirmed: true,
                     roomFunctionPlanConfirmedAt: at,
                     roomFunctionPlanConfirmedBy: '资产管理员',
-                  });
+                  };
+                  handleUpdateProject(updated);
+                  setSelectedProject(updated);
                 }}
                 disabled={!isEditable}
                 userRole={userRole}
+                floorCount={Number(selectedProject.floorCount || 0)}
               />
             </div>
           </div>

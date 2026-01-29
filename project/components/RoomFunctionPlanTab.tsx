@@ -13,6 +13,7 @@ interface RoomFunctionPlanTabProps {
   onConfirm: () => void;
   disabled?: boolean;
   userRole: UserRole;
+  floorCount?: number;
 }
 
 const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
@@ -25,13 +26,15 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
   onConfirm,
   disabled,
   userRole,
+  floorCount,
 }) => {
   const mains = useMemo(() => getMainCategories(), []);
 
-  const canEdit = userRole === UserRole.AssetAdmin && !disabled;
+  const canEdit = !disabled;
 
-  const [newRow, setNewRow] = useState<{ buildingName: string; roomNo: string; area: string }>(() => ({
+  const [newRow, setNewRow] = useState<{ buildingName: string; floor: string; roomNo: string; area: string }>(() => ({
     buildingName: (plan[0]?.buildingName || projectName || '').trim(),
+    floor: '',
     roomNo: '',
     area: '',
   }));
@@ -45,14 +48,19 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
     if (!canEdit) return;
 
     const buildingName = (newRow.buildingName || '').trim();
-    const roomNo = (newRow.roomNo || '').trim();
+    const floor = (newRow.floor || '').trim();
+    const roomNoRaw = (newRow.roomNo || '').trim();
     const area = Number(newRow.area);
 
     if (!buildingName) {
       alert('请输入建筑名称');
       return;
     }
-    if (!roomNo) {
+    if (!floor) {
+      alert('请选择楼层');
+      return;
+    }
+    if (!roomNoRaw) {
       alert('请输入房间号');
       return;
     }
@@ -64,7 +72,7 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
     const item: RoomFunctionPlanItem = {
       id: `RFP-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       buildingName,
-      roomNo,
+      roomNo: `${floor}-${roomNoRaw}`,
       area,
       mainCategory: '',
       subCategory: '',
@@ -72,7 +80,7 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
     };
 
     onChange([item, ...plan]);
-    setNewRow(p => ({ ...p, roomNo: '', area: '' }));
+    setNewRow(p => ({ ...p, floor: '', roomNo: '', area: '' }));
   };
 
   const removeRow = (id: string) => {
@@ -109,7 +117,7 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
       {/* 新增房间 */}
       {canEdit && (
         <div className="border border-[#dee0e3] rounded-lg p-4 bg-[#fcfcfd]">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div>
               <label className="block text-xs text-[#646a73] mb-1">建筑名称</label>
               <input
@@ -120,12 +128,32 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
               />
             </div>
             <div>
+              <label className="block text-xs text-[#646a73] mb-1">楼层</label>
+              <select
+                className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
+                value={newRow.floor}
+                onChange={e => setNewRow(p => ({ ...p, floor: e.target.value }))}
+                disabled={!floorCount || floorCount <= 0}
+              >
+                <option value="">选择楼层</option>
+                {(() => {
+                  const n = Number(floorCount || 0);
+                  if (!Number.isFinite(n) || n <= 0) return null;
+                  return Array.from({ length: n }, (_, i) => String(i + 1)).map(f => (
+                    <option key={f} value={f}>
+                      {f}F
+                    </option>
+                  ));
+                })()}
+              </select>
+            </div>
+            <div>
               <label className="block text-xs text-[#646a73] mb-1">房间号</label>
               <input
                 className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
                 value={newRow.roomNo}
                 onChange={e => setNewRow(p => ({ ...p, roomNo: e.target.value }))}
-                placeholder="如：3-305"
+                placeholder="如：305"
               />
             </div>
             <div>

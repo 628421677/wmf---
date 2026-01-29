@@ -120,16 +120,6 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
               <div>
                 <h3 className="text-lg font-bold text-[#1f2329]">高基表映射：{selectedProject.name}</h3>
                 <p className="text-sm text-[#646a73] mt-1">{selectedProject.id}</p>
-                <div className="mt-2 flex flex-wrap gap-3 items-center">
-                  <label className="flex items-center gap-2 text-xs text-[#646a73] select-none">
-                    <input
-                      type="checkbox"
-                      checked={asInfrastructureDept}
-                      onChange={e => setAsInfrastructureDept(e.target.checked)}
-                    />
-                    以基建处身份
-                  </label>
-                </div>
               </div>
               <button onClick={() => setSelectedProject(null)} className="text-[#646a73] hover:text-[#1f2329]"><X size={20} /></button>
             </div>
