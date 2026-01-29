@@ -14,7 +14,9 @@ import {
 
 import Dashboard from './components/Dashboard';
 import AssetTransfer from './components/AssetTransfer';
+import AssetsAuditLogPage from './components/AssetsAuditLogPage';
 import AssetsProjectNewPage from './components/AssetsProjectNewPage';
+import AssetsStockImportPage from './components/AssetsStockImportPage';
 import AssetsHomePage from './components/AssetsHomePage';
 import AssetsApplyPage from './components/AssetsApplyPage';
 import AssetsReviewPage from './components/AssetsReviewPage';
@@ -314,12 +316,12 @@ const App: React.FC = () => {
       case 'assets': return <Navigate to="/hall/assets/home" replace />;
       case 'assets-home': return <AssetsHomePage onNavigate={setCurrentView} />;
       case 'assets-project-new': return <AssetsProjectNewPage userRole={userRole} />;
-      case 'assets-stock-import': return <AssetTransfer userRole={userRole} initialDetailTab="form" />;
+      case 'assets-stock-import': return <AssetsStockImportPage userRole={userRole} />;
       case 'assets-apply': return <AssetsApplyPage userRole={userRole} />;
       case 'assets-review': return <AssetsReviewPage userRole={userRole} />;
       case 'assets-gaojibiao': return <AssetsGaojibiaoPage userRole={userRole} />;
       case 'assets-room-functions': return <AssetsRoomFunctionsPage userRole={userRole} />;
-      case 'assets-audit-log': return <AssetTransfer userRole={userRole} initialDetailTab="audit" />;
+      case 'assets-audit-log': return <AssetsAuditLogPage userRole={userRole} />;
       case 'allocation': return <Navigate to="/hall/allocation/home" replace />;
       case 'allocation-home': return <HousingAllocationHome userRole={userRole} onNavigate={setCurrentView} />;
       case 'allocation-approval': return <HousingAllocationApproval userRole={userRole} />;

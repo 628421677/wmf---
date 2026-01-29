@@ -1703,9 +1703,10 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const [gaojibiaoForm, setGaojibiaoForm] = useState<GaojibiaoMapping>(project.gaojibiaoData || {});
   const isReadOnly = project.isArchived || project.status === AssetStatus.Archived;
   const canEditAfterArchived = userRole === UserRole.AssetAdmin && !asInfrastructureDept;
+  const canEditGaojibiao = !isReadOnly || canEditAfterArchived;
 
   const handleSaveGaojibiao = () => {
-    if (isReadOnly) return;
+    if (!canEditGaojibiao) return;
     onUpdate({
       ...project,
       gaojibiaoData: gaojibiaoForm,
@@ -2433,7 +2434,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           onChange={e => setGaojibiaoForm(prev => ({ ...prev, assetName: e.target.value }))}
                           className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
                           placeholder="高基表资产名称"
-                          disabled={isReadOnly}
+                          disabled={!(canEditAfterArchived || !project.isArchived)}
                         />
                       </div>
                       <div>
@@ -2443,7 +2444,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           onChange={e => setGaojibiaoForm(prev => ({ ...prev, department: e.target.value }))}
                           className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
                           placeholder="资产使用部门"
-                          disabled={isReadOnly}
+                          disabled={!canEditGaojibiao}
                         />
                       </div>
                       <div>
@@ -2454,8 +2455,8 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           onChange={e => setGaojibiaoForm(prev => ({ ...prev, serviceLife: Number(e.target.value) }))}
                           className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
                           placeholder="资产使用年限"
-                          disabled={isReadOnly}
-                        />
+                          disabled={!canEditGaojibiao}
+                        />+
                       </div>
                       <div>
                         <label className="block text-xs text-[#646a73] mb-1">原值</label>
@@ -2465,7 +2466,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           onChange={e => setGaojibiaoForm(prev => ({ ...prev, originalValue: Number(e.target.value) }))}
                           className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
                           placeholder="资产原值"
-                          disabled={isReadOnly}
+                          disabled={!canEditGaojibiao}
                         />
                       </div>
                       <div>
@@ -2477,7 +2478,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           onChange={e => setGaojibiaoForm(prev => ({ ...prev, residualRate: Number(e.target.value) }))}
                           className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
                           placeholder="0.05"
-                          disabled={isReadOnly}
+                          disabled={!canEditGaojibiao}
                         />
                       </div>
                     </div>
@@ -2518,7 +2519,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                   roomFunctionPlanConfirmedBy: '资产管理员',
                 });
               }}
-              disabled={isReadOnly}
+              disabled={!canEditGaojibiao}
               userRole={userRole}
             />
           )}
