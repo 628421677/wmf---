@@ -1751,7 +1751,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             </div>
             {project.isArchived && (
               <p className="text-xs mt-1 text-purple-600 flex items-center gap-1">
-                <Archive size={12} /> 已归档（不可修改）
+                <Archive size={12} /> 已归档（仅允许维护高基表/房间功能）
               </p>
             )}
           </div>
@@ -2000,7 +2000,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           };
                           onUpdate(next);
                         }}
-                        disabled={isReadOnly && !canEditAfterArchived}
+                        disabled={!canEditGaojibiao}
                         className="text-xs px-3 py-2 border border-[#dee0e3] rounded flex items-center gap-1 hover:bg-gray-50 disabled:opacity-50"
                       >
                         <RefreshCw size={14} /> 初始化待审核
@@ -2424,7 +2424,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           onChange={e => setGaojibiaoForm(prev => ({ ...prev, assetCode: e.target.value }))}
                           className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
                           placeholder="高基表资产编号"
-                          disabled={isReadOnly && !canEditAfterArchived}
+                          disabled={!canEditGaojibiao}
                         />
                       </div>
                       <div>
@@ -2456,7 +2456,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           className="w-full border border-[#dee0e3] rounded px-3 py-2 text-sm"
                           placeholder="资产使用年限"
                           disabled={!canEditGaojibiao}
-                        />+
+                        />
                       </div>
                       <div>
                         <label className="block text-xs text-[#646a73] mb-1">原值</label>

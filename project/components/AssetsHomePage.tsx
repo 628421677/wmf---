@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   ArrowRight,
   ClipboardCheck,
@@ -8,7 +8,15 @@ import {
   LayoutGrid,
   ShieldCheck,
   Upload,
+  FileText,
+  Wallet,
+  Building,
+  AlertTriangle,
 } from 'lucide-react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { MOCK_PROJECTS } from '../constants';
+import { AssetStatus, Project } from '../types';
+import { normalizeAssetStatus } from '../utils/legacyAssetStatus';
 
 const ShortcutCard = ({
   title,
@@ -38,12 +46,82 @@ const ShortcutCard = ({
   );
 };
 
+const StatCard: React.FC<{
+  icon: React.ReactNode;
+  iconBg: string;
+  iconColor: string;
+  title: string;
+  value: string | number;
+  subtitle: string;
+}> = ({ icon, iconBg, iconColor, title, value, subtitle }) => (
+  <div className="bg-white p-5 rounded-lg shadow-sm border border-[#dee0e3] flex items-start gap-4">
+    <div className={`p-3 ${iconBg} ${iconColor} rounded-md`}>{icon}</div>
+    <div>
+      <h3 className="font-medium text-[#646a73] text-sm">{title}</h3>
+      <p className="text-2xl font-bold text-[#1f2329] mt-1">{value}</p>
+      <p className="text-xs text-[#8f959e] mt-1">{subtitle}</p>
+    </div>
+  </div>
+);
+
 const AssetsHomePage: React.FC<{ onNavigate: (view: any) => void }> = ({ onNavigate }) => {
+  const [projects] = useLocalStorage<Project[]>('uniassets-projects-v2', MOCK_PROJECTS);
+
+  const stats = useMemo(() => {
+    const normalized = projects.map(p => ({ ...p, status: normalizeAssetStatus((p as any).status) }));
+    const archivedCount = normalized.filter(p => p.status === AssetStatus.Archived).length;
+
+    return {
+      pending: normalized.filter(p => p.status === AssetStatus.PendingReview).length,
+      constructionAmount: normalized
+        .filter(p => p.status !== AssetStatus.Archived)
+        .reduce((acc, p) => acc + (p.contractAmount || 0), 0),
+      completed: archivedCount,
+      overdue: normalized.filter(p => p.isOverdue).length,
+    };
+  }, [projects]);
+
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold text-[#1f2329]">资产转固与管理</h1>
         <p className="text-[#646a73]">请选择您需要进入的功能模块。</p>
+      </div>
+
+      {/* 统计卡片（与列表页口径一致） */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard
+          icon={<FileText />}
+          iconBg="bg-blue-50"
+          iconColor="text-blue-600"
+          title="待转固项目"
+          value={stats.pending}
+          subtitle="等待审计/财务核算"
+        />
+        <StatCard
+          icon={<Wallet />}
+          iconBg="bg-amber-50"
+          iconColor="text-amber-600"
+          title="在建工程总额"
+          value={`¥${(stats.constructionAmount / 10000).toFixed(0)}万`}
+          subtitle="已交付未决算"
+        />
+        <StatCard
+          icon={<Building />}
+          iconBg="bg-green-50"
+          iconColor="text-green-600"
+          title="已入账资产"
+          value={stats.completed}
+          subtitle="正式转固完成"
+        />
+        <StatCard
+          icon={<AlertTriangle />}
+          iconBg="bg-red-50"
+          iconColor="text-red-600"
+          title="超期预警"
+          value={stats.overdue}
+          subtitle="需及时处理"
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -95,8 +173,3 @@ const AssetsHomePage: React.FC<{ onNavigate: (view: any) => void }> = ({ onNavig
 };
 
 export default AssetsHomePage;
-
-
-
-
-

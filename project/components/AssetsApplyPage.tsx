@@ -7,6 +7,7 @@ import { computeAttachmentCompletion, getAttachmentTypeLabel, getStageAttachment
 
 const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
   const isEditable = (p: Project | null) => !!p && p.status === AssetStatus.DisposalPending;
+  const canOnlyViewProgress = (p: Project | null) => !!p && [AssetStatus.PendingReview, AssetStatus.PendingArchive, AssetStatus.Archived].includes(p.status);
   const { projects, setProjects } = useAssetData();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,7 +24,7 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     return projects
-      .filter((p) => ![AssetStatus.PendingArchive, AssetStatus.Archived].includes(p.status))
+      .filter((p) => true)
       .filter((p) => {
         if (!q) return true;
         return (
@@ -39,7 +40,7 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
     <div className="space-y-6 animate-fade-in">
       <div>
         <h2 className="text-2xl font-bold text-[#1f2329]">转固申请</h2>
-        <p className="text-[#646a73]">默认仅展示“可发起申请/待申请（待处置）”项目。可查看全流程状态，但本界面不提供审核操作。</p>
+        <p className="text-[#646a73]">展示所有状态项目。仅“待处置”可在本页面维护拆分/附件并发起转固申请；“待审核 / 待归档 / 已归档”仅可查看进度。</p>
       </div>
 
       <div className="bg-white border rounded-lg p-4 flex items-center gap-3">
@@ -52,7 +53,7 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
             className="w-full pl-9 pr-3 py-2 border border-[#dee0e3] rounded-md text-sm"
           />
         </div>
-        <div className="text-sm text-[#646a73]">共 {filtered.length} 项（不含待归档/已归档）</div>
+        <div className="text-sm text-[#646a73]">共 {filtered.length} 项（待处置可操作，其余仅查看进度）</div>
       </div>
 
       <div className="bg-white border rounded-lg overflow-hidden">
@@ -94,6 +95,7 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                         computeAttachmentCompletion(AssetStatus.PendingReview, p.attachments || []).missingRequired > 0
                       }
                       onClick={() => {
+                        if (p.status !== AssetStatus.DisposalPending) return;
                         const stat = computeAttachmentCompletion(AssetStatus.PendingReview, p.attachments || []);
                         if (stat.missingRequired > 0) {
                           const req = getStageAttachmentRequirements(AssetStatus.PendingReview);
@@ -107,7 +109,7 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                         }
                         setProjects((prev) => prev.map((x) => (x.id === p.id ? ({ ...x, status: AssetStatus.PendingReview } as Project) : x)));
                       }}
-                      title={p.status !== AssetStatus.DisposalPending ? '仅待处置项目可发起' : undefined}
+                      title={p.status !== AssetStatus.DisposalPending ? '仅待处置项目可发起（其余状态仅查看进度）' : undefined}
                     >
                       发起转固申请 <ArrowRight size={14} />
                     </button>
@@ -555,7 +557,9 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                             <div className="flex justify-end">
                               <button
                                 type="button"
+                                disabled={!isEditable(selectedProject)}
                                 onClick={() => {
+                                  if (!isEditable(selectedProject)) return;
                                   const typeEl = document.getElementById('apply-upload-type') as HTMLSelectElement | null;
                                   const nameEl = document.getElementById('apply-upload-name') as HTMLInputElement | null;
                                   const type = (typeEl?.value || 'other') as any;
@@ -585,7 +589,7 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                                   );
                                   if (nameEl) nameEl.value = '';
                                 }}
-                                className="text-xs px-3 py-2 bg-[#3370ff] text-white rounded flex items-center gap-1 hover:bg-[#285cc9]"
+                                className="text-xs px-3 py-2 bg-[#3370ff] text-white rounded flex items-center gap-1 hover:bg-[#285cc9] disabled:opacity-40 disabled:cursor-not-allowed"
                               >
                                 <Plus size={14} /> 上传（模拟）
                               </button>
@@ -684,7 +688,9 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                                       <>
                                         <button
                                           type="button"
+                                          disabled={!isEditable(selectedProject)}
                                           onClick={() => {
+                                            if (!isEditable(selectedProject)) return;
                                             setProjects((prev) =>
                                               prev.map((p) =>
                                                 p.id === selectedProject.id
@@ -728,7 +734,9 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                                         </button>
                                         <button
                                           type="button"
+                                          disabled={!isEditable(selectedProject)}
                                           onClick={() => {
+                                            if (!isEditable(selectedProject)) return;
                                             const nextName = prompt('请输入新的附件名称', att.name);
                                             if (nextName === null) return;
                                             const name = nextName.trim();
@@ -795,7 +803,9 @@ const AssetsApplyPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
                                         </button>
                                         <button
                                           type="button"
+                                          disabled={!isEditable(selectedProject)}
                                           onClick={() => {
+                                            if (!isEditable(selectedProject)) return;
                                             if (!confirm('确定要删除该附件吗？')) return;
                                             setProjects((prev) =>
                                               prev.map((p) =>
