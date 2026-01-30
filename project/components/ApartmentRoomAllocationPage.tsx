@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle, Search, User, X } from 'lucide-react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { AuditLog, PersonRoomRelation, RoomAsset, UserRole } from '../types';
@@ -37,8 +37,9 @@ function logAudit(userRole: UserRole, setAuditLogs: (fn: (prev: AuditLog[]) => A
 }
 
 const ApartmentRoomAllocationPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
-  const [auditLogs, setAuditLogs] = useLocalStorage<AuditLog[]>('uniassets-audit-logs', []);
+  const [, setAuditLogs] = useLocalStorage<AuditLog[]>('uniassets-audit-logs', []);
   const [relations, setRelations] = useLocalStorage<PersonRoomRelation[]>(RELATIONS_KEY, []);
+  const [roomsVersion, setRoomsVersion] = useState(0);
 
   const [teacherQuery, setTeacherQuery] = useState('');
   const [roomQuery, setRoomQuery] = useState('');
@@ -46,11 +47,21 @@ const ApartmentRoomAllocationPage: React.FC<{ userRole: UserRole }> = ({ userRol
   const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
   const [selectedRoomId, setSelectedRoomId] = useState<string>('');
 
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === ROOMS_STORAGE_KEY) {
+        setRoomsVersion(v => v + 1);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   const rooms = useMemo(() => {
     // From “资产转固与管理” sync: uniassets-rooms-v1
     const list = getStoredRooms();
     return list;
-  }, [auditLogs.length]);
+  }, [roomsVersion]);
 
   const teacherList = useMemo(() => {
     const q = teacherQuery.trim().toLowerCase();

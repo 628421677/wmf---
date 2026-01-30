@@ -68,6 +68,14 @@ function mapMainCategoryToRoomType(mainCategory: string): RoomAsset['type'] {
 
 export function upsertRoomsFromProject(project: Project) {
   const plan = project.roomFunctionPlan || [];
+  if (typeof window !== 'undefined') {
+    console.log('[rooms-sync] upsertRoomsFromProject', {
+      projectId: project.id,
+      projectName: project.name,
+      planCount: plan.length,
+      samplePlan: plan.slice(0, 3),
+    });
+  }
   if (plan.length === 0) return;
 
   const existing = getStoredRooms();
@@ -77,24 +85,60 @@ export function upsertRoomsFromProject(project: Project) {
 
 
   const nextRooms: RoomAsset[] = plan.map(p => {
+    // 解析房间类型：教师宿舍、公寓等一律标记为 Student，便于教师分配页筛选
+    const isTeacherHousing = (() => {
+      const lowerProj = (project.name || '').toLowerCase();
+      const lowerMain = (p.mainCategory || '').toLowerCase();
+      const lowerSub = (p.subCategory || '').toLowerCase();
+      return lowerProj.includes('教师公寓') || lowerProj.includes('周转房') ||
+             lowerMain === 'lifeservice' ||
+             ['studentdormitory','studentdorm','学生宿舍','teacherapartment','staffturnover','教职工周转房'].some(k => lowerSub === k.toLowerCase());
+    })();
+    const roomType: RoomAsset['type'] = isTeacherHousing ? 'Student' : mapMainCategoryToRoomType(p.mainCategory);
+
+    // 提取楼层：取 roomNo 开头连续数字，如 301A -> 3
+    const floorMatch = String(p.roomNo).match(/^(\d+)/);
+    const floorNum = floorMatch ? Number(floorMatch[1]) : 1;
+
     return {
       id: `RM-${sourceProjectId}-${p.roomNo}`,
       roomNo: p.roomNo,
       buildingName: p.buildingName || projectBuildingName,
       area: p.area || 0,
-      type: mapMainCategoryToRoomType(p.mainCategory),
+      type: roomType,
       status: 'Empty',
       department: '',
-      floor: Number(String(p.roomNo).slice(0, 1)) || 1,
+      floor: floorNum,
       sourceProjectId,
       functionMain: p.mainCategory,
       functionSub: (() => {
         const raw = String(p.subCategory || '').trim();
-        const lower = raw.toLowerCase();
-        // 兼容历史英文枚举 / 新中文标签
-        const norm = lower;
-        if (norm === 'studentdormitory' || norm === 'studentdorm' || raw === '学生宿舍') return 'studentdorm';
-        if (norm === 'teacherapartment' || norm === 'staffturnover' || raw === '教职工周转房') return 'staffturnover';
+        const norm = raw.toLowerCase();
+
+        // 统一归一化：教师公寓/周转房 => teacherapartment；学生宿舍 => studentdorm
+        // 兼容：驼峰、历史英文枚举、新中文标签
+        if (
+          norm === 'studentdormitory' ||
+          norm === 'studentdorm' ||
+          raw === '学生宿舍' ||
+          raw === '学生公寓' ||
+          norm === 'studentdorm' ||
+          norm === 'studentdormitory'
+        ) {
+          return 'studentdorm';
+        }
+
+        if (
+          norm === 'teacherapartment' ||
+          norm === 'staffturnover' ||
+          raw === '教职工周转房' ||
+          raw === '教师公寓' ||
+          raw === '教师周转房' ||
+          raw === '周转房'
+        ) {
+          return 'teacherapartment';
+        }
+
         return norm || raw;
       })(),
     } as any;

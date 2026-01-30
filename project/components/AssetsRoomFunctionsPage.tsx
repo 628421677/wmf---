@@ -3,6 +3,7 @@ import { Layers, Search, X } from 'lucide-react';
 import { useAssetData } from '../hooks/useAssetData';
 import { AssetStatus, Project, UserRole } from '../types';
 import RoomFunctionPlanTab from './RoomFunctionPlanTab';
+import { upsertRoomsFromProject } from '../utils/assetRoomSync';
 
 const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
   const { projects, setProjects, logAudit } = useAssetData();
@@ -130,15 +131,44 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
                 confirmedBy={selectedProject.roomFunctionPlanConfirmedBy}
                 onConfirm={() => {
                   if (!isEditable) return;
+
+                  const lowerName = String(selectedProject.name || '').toLowerCase();
+                  const autoSub = lowerName.includes('c5') || lowerName.includes('和园')
+                    ? 'StudentDorm'
+                    : lowerName.includes('教师公寓')
+                      ? 'StaffTurnover'
+                      : '';
+
+                  const patchedPlan = (selectedProject.roomFunctionPlan || []).map(p => {
+                    if (p.subCategory) return p;
+                    if (!autoSub) return p;
+                    return {
+                      ...p,
+                      mainCategory: p.mainCategory || 'LifeService',
+                      subCategory: autoSub,
+                    };
+                  });
+
                   const at = new Date().toISOString();
                   const updated = {
                     ...selectedProject,
+                    roomFunctionPlan: patchedPlan,
                     roomFunctionPlanConfirmed: true,
                     roomFunctionPlanConfirmedAt: at,
                     roomFunctionPlanConfirmedBy: '资产管理员',
                   };
+
                   handleUpdateProject(updated);
                   setSelectedProject(updated);
+
+                  // 同步到“公寓与宿舍管理/教师分配”等模块共用的房间台账（uniassets-rooms-v1）
+                  try {
+                    upsertRoomsFromProject(updated);
+                    alert('重新同步成功：房间台账已更新（uniassets-rooms-v1）。');
+                  } catch (e) {
+                    console.error(e);
+                    alert('重新同步失败：请查看控制台日志。');
+                  }
                 }}
                 disabled={!isEditable}
                 userRole={userRole}
