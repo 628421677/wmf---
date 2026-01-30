@@ -1702,7 +1702,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   // 更新高基表数据
   const [gaojibiaoForm, setGaojibiaoForm] = useState<GaojibiaoMapping>(project.gaojibiaoData || {});
   const isReadOnly = project.isArchived || project.status === AssetStatus.Archived;
-  const canEditAfterArchived = userRole === UserRole.AssetAdmin && !asInfrastructureDept;
+  const canEditAfterArchived = !asInfrastructureDept;
   const canEditGaojibiao = !isReadOnly || canEditAfterArchived;
 
   const handleSaveGaojibiao = () => {
@@ -1751,7 +1751,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             </div>
             {project.isArchived && (
               <p className="text-xs mt-1 text-purple-600 flex items-center gap-1">
-                <Archive size={12} /> 已归档（仅允许维护高基表/房间功能）
+                <Archive size={12} /> 已归档（可维护高基表/房间功能）
               </p>
             )}
           </div>

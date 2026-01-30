@@ -177,7 +177,7 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
               </button>
             </div>
           </div>
-          <div className="text-xs text-[#8f959e] mt-2">说明：已归档后资产处仍可新增/删除房间，并继续维护主类/亚类。</div>
+          <div className="text-xs text-[#8f959e] mt-2">说明：已归档后仍可新增/删除房间，并继续维护主类/亚类。</div>
         </div>
       )}
 

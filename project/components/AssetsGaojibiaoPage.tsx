@@ -10,25 +10,16 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [asInfrastructureDept, setAsInfrastructureDept] = useState(false);
   
-  // 计算是否只读
-  const isReadOnly = useMemo(() => 
-    selectedProject && (selectedProject.isArchived || selectedProject.status === AssetStatus.Archived)
-  , [selectedProject]);
-  
-  // 计算是否允许在归档后编辑
-  const canEditAfterArchived = useMemo(() => 
-    userRole === UserRole.AssetAdmin && !asInfrastructureDept
-  , [userRole, asInfrastructureDept]);
-  
-  // 是否可以编辑
-  const isEditable = useMemo(() => 
-    !isReadOnly || (isReadOnly && canEditAfterArchived)
-  , [isReadOnly, canEditAfterArchived]);
+  // 仅按项目状态控制：待归档/已归档允许编辑
+  const isEditable = useMemo(() => {
+    if (!selectedProject) return false;
+    return [AssetStatus.PendingArchive, AssetStatus.Archived].includes(selectedProject.status);
+  }, [selectedProject]);
 
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     return projects
-      .filter((p) => p.status === AssetStatus.PendingArchive) // Only show PendingArchive
+      .filter((p) => [AssetStatus.PendingArchive, AssetStatus.Archived].includes(p.status))
       .filter((p) => {
         if (!q) return true;
         return p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
@@ -45,7 +36,7 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
 
   const handleSaveGaojibiao = () => {
     if (!selectedProject) return;
-    if (isReadOnly && !canEditAfterArchived) return;
+    if (!isEditable) return;
 
     const updatedProject = { ...(selectedProject as any), gaojibiaoData: gaojibiaoForm } as Project;
 
@@ -62,7 +53,7 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
     <div className="space-y-6 animate-fade-in">
       <div>
         <h2 className="text-2xl font-bold text-[#1f2329]">高基表映射</h2>
-        <p className="text-[#646a73]">对“待归档”的项目进行高基表字段映射，确保数据准确上报。</p>
+        <p className="text-[#646a73]">对“待归档 / 已归档”的项目进行高基表字段映射，确保数据准确上报。</p>
       </div>
 
       <div className="bg-white border rounded-lg p-4 flex items-center gap-3">
@@ -128,7 +119,7 @@ const AssetsGaojibiaoPage: React.FC<{ userRole: UserRole }> = ({ userRole }) => 
                 <h4 className="font-medium text-[#1f2329] mb-4">高基表字段映射</h4>
                                 {!isEditable && (
                   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 text-sm text-yellow-800 rounded-r-lg mb-4">
-                    <p><span className="font-bold">只读模式</span>：此项目已归档，您只能查看信息。如需修改，请联系资产管理员。</p>
+                    <p><span className="font-bold">只读模式</span>：当前仅支持在“待归档/已归档”阶段维护高基表映射。</p>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-6">

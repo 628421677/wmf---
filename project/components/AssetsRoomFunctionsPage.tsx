@@ -11,25 +11,15 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [asInfrastructureDept, setAsInfrastructureDept] = useState(false);
 
-  const isReadOnly = useMemo(
-    () => selectedProject && (selectedProject.isArchived || selectedProject.status === AssetStatus.Archived),
-    [selectedProject]
-  );
-
-  const canEditAfterArchived = useMemo(
-    () => userRole === UserRole.AssetAdmin && !asInfrastructureDept,
-    [userRole, asInfrastructureDept]
-  );
-
-  const isEditable = useMemo(
-    () => !isReadOnly || (isReadOnly && canEditAfterArchived),
-    [isReadOnly, canEditAfterArchived]
-  );
+  const isEditable = useMemo(() => {
+    if (!selectedProject) return false;
+    return [AssetStatus.PendingArchive, AssetStatus.Archived].includes(selectedProject.status);
+  }, [selectedProject]);
 
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     return projects
-      .filter((p) => p.status === AssetStatus.PendingArchive) // Only show PendingArchive
+      .filter((p) => [AssetStatus.PendingArchive, AssetStatus.Archived].includes(p.status))
       .filter((p) => {
         if (!q) return true;
         return p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
@@ -48,7 +38,7 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
     <div className="space-y-6 animate-fade-in">
       <div>
         <h2 className="text-2xl font-bold text-[#1f2329]">房间功能划分</h2>
-        <p className="text-[#646a73]">对“待归档”的项目进行房间功能划分，为高基表映射做准备。</p>
+        <p className="text-[#646a73]">对“待归档 / 已归档”的项目进行房间功能划分，为高基表映射做准备。</p>
       </div>
 
       <div className="bg-white border rounded-lg p-4 flex items-center gap-3">
@@ -120,7 +110,7 @@ const AssetsRoomFunctionsPage: React.FC<{ userRole: UserRole }> = ({ userRole })
                 </div>
                 {!isEditable && (
                   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 text-sm text-yellow-800 rounded-r-lg mt-2">
-                    <p><span className="font-bold">只读模式</span>：此项目已归档，您只能查看信息。如需修改，请联系资产管理员。</p>
+                    <p><span className="font-bold">只读模式</span>：当前仅支持在“待归档/已归档”阶段维护房间功能划分。</p>
                   </div>
                 )}
               </div>
