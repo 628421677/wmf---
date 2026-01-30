@@ -106,10 +106,10 @@ const RoomFunctionPlanTab: React.FC<RoomFunctionPlanTabProps> = ({
         {canEdit && (
           <button
             onClick={onConfirm}
-            disabled={confirmed || plan.length === 0}
+            disabled={plan.length === 0}
             className="px-3 py-1.5 bg-green-500 text-white rounded text-sm hover:bg-green-600 disabled:opacity-50"
           >
-            确认划分
+            {confirmed ? '重新同步' : '确认划分'}
           </button>
         )}
       </div>

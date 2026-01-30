@@ -1,20 +1,9 @@
 import React from 'react';
-import CommercialHousing from './CommercialHousing';
 import { UserRole } from '../types';
+import ApartmentManagementRoomsPage from './ApartmentManagementRoomsPage';
 
 const ApartmentManagementRooms: React.FC<{ userRole: UserRole }> = ({ userRole }) => {
-  return (
-    <CommercialHousing
-      userRole={userRole}
-      initialMainTab="apartment"
-      initialApartmentTab="rooms"
-      hideMainTabNav
-      hideSubTabNav
-      pageTitle="公寓与宿舍管理"
-      pageSubtitle="入住申请、房间管理、水电结算、押金退还全流程"
-    />
-  );
+  return <ApartmentManagementRoomsPage />;
 };
 
 export default ApartmentManagementRooms;
-

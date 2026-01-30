@@ -72,6 +72,8 @@ function useLocalStorage<T>(key: string, initialValue: T) {
     setStoredValue(valueToStore);
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      // Dispatch a storage event to sync across tabs/hooks (same behavior as hooks/useLocalStorage)
+      window.dispatchEvent(new StorageEvent('storage', { key }));
     }
   };
 
@@ -2000,7 +2002,7 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                           };
                           onUpdate(next);
                         }}
-                        disabled={!canEditGaojibiao}
+                        disabled={!(userRole === UserRole.AssetAdmin && (!project.isArchived || (project.status === AssetStatus.Archived && !asInfrastructureDept)))}
                         className="text-xs px-3 py-2 border border-[#dee0e3] rounded flex items-center gap-1 hover:bg-gray-50 disabled:opacity-50"
                       >
                         <RefreshCw size={14} /> 初始化待审核
@@ -2512,14 +2514,32 @@ const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               confirmedAt={project.roomFunctionPlanConfirmedAt}
               confirmedBy={project.roomFunctionPlanConfirmedBy}
               onConfirm={() => {
-                onUpdate({
+                const lowerName = String(project.name || '').toLowerCase();
+
+                const autoSub = lowerName.includes('c5') || lowerName.includes('和园') ? 'StudentDorm' : lowerName.includes('教师公寓') ? 'StaffTurnover' : '';
+
+                const patchedPlan = (project.roomFunctionPlan || []).map(p => {
+                  if (p.subCategory) return p;
+                  if (!autoSub) return p;
+                  return {
+                    ...p,
+                    mainCategory: p.mainCategory || 'LifeService',
+                    subCategory: autoSub,
+                  };
+                });
+
+                const nextProject = {
                   ...project,
+                  roomFunctionPlan: patchedPlan,
                   roomFunctionPlanConfirmed: true,
                   roomFunctionPlanConfirmedAt: new Date().toISOString(),
                   roomFunctionPlanConfirmedBy: '资产管理员',
-                });
+                };
+
+                onUpdate(nextProject);
+                upsertRoomsFromProject(nextProject);
               }}
-              disabled={!canEditGaojibiao}
+              disabled={!(userRole === UserRole.AssetAdmin && (!project.isArchived || (project.status === AssetStatus.Archived && !asInfrastructureDept)))}
               userRole={userRole}
             />
           )}

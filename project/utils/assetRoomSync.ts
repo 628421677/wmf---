@@ -42,6 +42,8 @@ export function getStoredRooms(): RoomAsset[] {
 export function setStoredRooms(rooms: RoomAsset[]) {
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(ROOMS_STORAGE_KEY, JSON.stringify(rooms));
+  // 触发同标签页内的 useLocalStorage 监听刷新
+  window.dispatchEvent(new StorageEvent('storage', { key: ROOMS_STORAGE_KEY }));
 }
 
 function mapMainCategoryToRoomType(mainCategory: string): RoomAsset['type'] {
@@ -73,6 +75,7 @@ export function upsertRoomsFromProject(project: Project) {
 
   const projectBuildingName = project.name;
 
+
   const nextRooms: RoomAsset[] = plan.map(p => {
     return {
       id: `RM-${sourceProjectId}-${p.roomNo}`,
@@ -85,7 +88,15 @@ export function upsertRoomsFromProject(project: Project) {
       floor: Number(String(p.roomNo).slice(0, 1)) || 1,
       sourceProjectId,
       functionMain: p.mainCategory,
-      functionSub: p.subCategory,
+      functionSub: (() => {
+        const raw = String(p.subCategory || '').trim();
+        const lower = raw.toLowerCase();
+        // 兼容历史英文枚举 / 新中文标签
+        const norm = lower;
+        if (norm === 'studentdormitory' || norm === 'studentdorm' || raw === '学生宿舍') return 'studentdorm';
+        if (norm === 'teacherapartment' || norm === 'staffturnover' || raw === '教职工周转房') return 'staffturnover';
+        return norm || raw;
+      })(),
     } as any;
   });
 
