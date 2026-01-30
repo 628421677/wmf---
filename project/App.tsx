@@ -62,6 +62,7 @@ import ApartmentManagementApplications from './components/ApartmentManagementApp
 import ApartmentManagementRooms from './components/ApartmentManagementRooms';
 import ApartmentManagementUtilities from './components/ApartmentManagementUtilities';
 import ApartmentManagementDeposits from './components/ApartmentManagementDeposits';
+import ApartmentRoomAllocationPage from './components/ApartmentRoomAllocationPage';
 import InventoryCheckEnhanced from './components/InventoryCheckEnhanced';
 import InventoryHomePage from './components/InventoryHomePage';
 import InventoryTasksPage from './components/InventoryTasksPage';
@@ -134,6 +135,7 @@ export type View =
   | 'apartment-rooms'
   | 'apartment-utilities'
   | 'apartment-deposits'
+  | 'apartment-allocation'
 
   | 'maintenance'
   | 'maintenance-home'
@@ -203,6 +205,7 @@ const viewToPath: Record<View, string> = {
   'apartment-rooms': '/hall/residence-mgmt/rooms',
   'apartment-utilities': '/hall/residence-mgmt/utilities',
   'apartment-deposits': '/hall/residence-mgmt/deposits',
+  'apartment-allocation': '/hall/residence-mgmt/allocation',
 
 
   maintenance: '/hall/maintenance',
@@ -376,6 +379,7 @@ const App: React.FC = () => {
       case 'apartment-rooms': return <ApartmentManagementRooms userRole={userRole} />;
       case 'apartment-utilities': return <ApartmentManagementUtilities userRole={userRole} />;
       case 'apartment-deposits': return <ApartmentManagementDeposits userRole={userRole} />;
+      case 'apartment-allocation': return <ApartmentRoomAllocationPage userRole={userRole} />;
       case 'inventory':
         return <Navigate to="/hall/inventory/home" replace />;
       case 'inventory-home':
@@ -523,6 +527,7 @@ const App: React.FC = () => {
         case 'apartment-rooms': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 房间管理</span></>;
         case 'apartment-utilities': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 水电管理</span></>;
         case 'apartment-deposits': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 押金管理</span></>;
+        case 'apartment-allocation': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('residence-home')}> / 公寓与宿舍管理</span> <span className="text-[#1f2329]"> / 房间分配</span></>;
         case 'maintenance': return <>{hallCrumb} <span className="text-[#1f2329]"> / 维修与物业服务</span></>;
         case 'maintenance-home': return <>{hallCrumb} <span className="text-[#1f2329]"> / 维修与物业服务</span></>;
         case 'maintenance-repair': return <>{hallCrumb} <span className="text-[#8f959e] cursor-pointer hover:text-[#3370ff]" onClick={() => setCurrentView('maintenance-home')}> / 维修与物业服务</span> <span className="text-[#1f2329]"> / 维修工单</span></>;
@@ -646,6 +651,7 @@ const App: React.FC = () => {
         { id: 'apartment-rooms', label: '房间管理', roles: [UserRole.AssetAdmin, UserRole.Teacher] },
         { id: 'apartment-utilities', label: '水电管理', roles: [UserRole.AssetAdmin, UserRole.Teacher] },
         { id: 'apartment-deposits', label: '押金管理', roles: [UserRole.AssetAdmin, UserRole.Teacher] },
+        { id: 'apartment-allocation', label: '房间分配', roles: [UserRole.AssetAdmin, UserRole.Teacher] },
       ],
     },
 

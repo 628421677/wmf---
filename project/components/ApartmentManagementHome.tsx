@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, BarChart3, ClipboardList, Home, Droplet, CreditCard } from 'lucide-react';
+import { ArrowRight, BarChart3, ClipboardList, Home, Droplet, CreditCard, UserCheck } from 'lucide-react';
 import { View } from '../App';
 import { UserRole } from '../types';
 
@@ -47,6 +47,14 @@ const ApartmentManagementHome: React.FC<ApartmentManagementHomeProps> = ({ onNav
       title: '押金管理',
       desc: '押金收取、扣除项、退还与对账。',
       icon: CreditCard,
+      color: 'bg-[#3370ff]',
+      bg: 'bg-[#e1eaff]',
+    },
+    {
+      id: 'apartment-allocation' as View,
+      title: '房间分配',
+      desc: '为教师分配公寓/宿舍房间，支持分配与解除。房源来自资产转固同步房间台账。',
+      icon: UserCheck,
       color: 'bg-[#3370ff]',
       bg: 'bg-[#e1eaff]',
     },
