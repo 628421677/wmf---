@@ -242,7 +242,12 @@ const pathToView: Record<string, View> = Object.fromEntries(
 ) as Record<string, View>;
 
 const App: React.FC = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('loggedIn') === 'true';
+    }
+    return false;
+  });
   const location = useLocation();
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState<UserRole>(UserRole.AssetAdmin);
@@ -292,6 +297,7 @@ const App: React.FC = () => {
   const handleLogin = (role: UserRole) => {
     setUserRole(role);
     setIsLoggedIn(true);
+    localStorage.setItem('loggedIn', 'true');
     // Reset view based on role
     if (role === UserRole.Guest) {
       setCurrentView('commercial');
@@ -311,7 +317,7 @@ const App: React.FC = () => {
       return <CommercialHousing userRole={userRole} />;
     }
     switch(currentView) {
-      case 'cockpit': return <Dashboard userRole={userRole} onEnterBigScreen={() => setIsBigScreen(true)} />;
+      case 'cockpit': return <Dashboard userRole={userRole} onEnterBigScreen={() => { window.location.href = 'http://localhost:3000'; }} />;
       case 'todos': return <MyTodos onNavigate={setCurrentView} />; // Pass navigation function
       case 'hall': return <BusinessHall userRole={userRole} onNavigate={setCurrentView} />;
       
@@ -853,7 +859,8 @@ const App: React.FC = () => {
                     <p className="text-xs text-[#8f959e]">{userRole === UserRole.CollegeAdmin ? '机械学院' : userRole === UserRole.Teacher ? '教师' : userRole === UserRole.Guest ? '访客' : '信息办'}</p>
                 </div>
                 <button 
-                  onClick={() => setIsLoggedIn(false)}
+                  onClick={() => { setIsLoggedIn(false);
+                  localStorage.removeItem('loggedIn'); }}
                   className="ml-auto text-xs text-[#f54a45] hover:underline"
                 >
                   退出
